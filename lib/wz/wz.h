@@ -15,7 +15,7 @@ enum wz_error_kind {
     WZ_ERROR_KIND_NONE,
     WZ_ERROR_KIND_BADOFFSET,
     WZ_ERROR_KIND_ERRNO,
-    WZ_ERROR_KIND_UNKNOWNDIRECTORYENTRYTYPE,
+    WZ_ERROR_KIND_UNKNOWNDIRECTORYENTRYKIND,
     WZ_ERROR_KIND_FILEPARSEERROR1,
     WZ_ERROR_KIND_FILEPARSEERROR2,
     WZ_ERROR_KIND_FILEPARSEERROR3,
@@ -35,8 +35,8 @@ static inline const char* wz_error_kind_str(
             return "WZ_ERROR_KIND_BADOFFSET";
         case WZ_ERROR_KIND_ERRNO:
             return "WZ_ERROR_KIND_ERRNO";
-        case WZ_ERROR_KIND_UNKNOWNDIRECTORYENTRYTYPE:
-            return "WZ_ERROR_KIND_UNKNOWNDIRECTORYENTRYTYPE";
+        case WZ_ERROR_KIND_UNKNOWNDIRECTORYENTRYKIND:
+            return "WZ_ERROR_KIND_UNKNOWNDIRECTORYENTRYKIND";
         case WZ_ERROR_KIND_FILEPARSEERROR1:
             return "WZ_ERROR_KIND_FILEPARSEERROR1";
         case WZ_ERROR_KIND_FILEPARSEERROR2:
@@ -69,7 +69,7 @@ struct wz_error {
 
         int errno_;
 
-        uint8_t unknown_directoryentry_type;
+        uint8_t unknown_directoryentry_kind;
         uint8_t unknown_string_offset_kind;
         uint8_t unknown_property_kind;
         struct {
@@ -104,9 +104,9 @@ static inline int wz_error_printto(const struct wz_error* e, FILE* outf) {
                 if (ret < 0) return ret;
                 count += ret;
             } break;
-        case WZ_ERROR_KIND_UNKNOWNDIRECTORYENTRYTYPE:
+        case WZ_ERROR_KIND_UNKNOWNDIRECTORYENTRYKIND:
             {
-                ret = fprintf(outf, "unknown directory entry type %d", e->unknown_directoryentry_type);
+                ret = fprintf(outf, "unknown directory entry kind %d", e->unknown_directoryentry_kind);
                 if (ret < 0) return ret;
                 count += ret;
             } break;
@@ -288,30 +288,30 @@ struct wz_error wz_directory_from(
         struct wz_directory* d,
         uint8_t** off);
 
-enum wz_directoryentry_type {
-    WZ_DIRECTORYENTRY_TYPE_UNSPECIFIED,
-    WZ_DIRECTORYENTRY_TYPE_UNKNOWN,
-    WZ_DIRECTORYENTRY_TYPE_FILE,
-    WZ_DIRECTORYENTRY_TYPE_SUBDIRECTORY,
+enum wz_directoryentry_kind {
+    WZ_DIRECTORYENTRY_KIND_UNSPECIFIED,
+    WZ_DIRECTORYENTRY_KIND_UNKNOWN,
+    WZ_DIRECTORYENTRY_KIND_FILE,
+    WZ_DIRECTORYENTRY_KIND_SUBDIRECTORY,
 };
 
-static inline const char* wz_directoryentry_type_str(
-        enum wz_directoryentry_type t) {
+static inline const char* wz_directoryentry_kind_str(
+        enum wz_directoryentry_kind t) {
     switch (t) {
-        case WZ_DIRECTORYENTRY_TYPE_UNKNOWN:
-            return "WZ_DIRECTORYENTRY_TYPE_UNKNOWN";
-        case WZ_DIRECTORYENTRY_TYPE_FILE:
-            return "WZ_DIRECTORYENTRY_TYPE_FILE";
-        case WZ_DIRECTORYENTRY_TYPE_SUBDIRECTORY:
-            return "WZ_DIRECTORYENTRY_TYPE_SUBDIRECTORY";
-        case WZ_DIRECTORYENTRY_TYPE_UNSPECIFIED:
+        case WZ_DIRECTORYENTRY_KIND_UNKNOWN:
+            return "WZ_DIRECTORYENTRY_KIND_UNKNOWN";
+        case WZ_DIRECTORYENTRY_KIND_FILE:
+            return "WZ_DIRECTORYENTRY_KIND_FILE";
+        case WZ_DIRECTORYENTRY_KIND_SUBDIRECTORY:
+            return "WZ_DIRECTORYENTRY_KIND_SUBDIRECTORY";
+        case WZ_DIRECTORYENTRY_KIND_UNSPECIFIED:
         default:
-            return "WZ_DIRECTORYENTRY_TYPE_??";
+            return "WZ_DIRECTORYENTRY_KIND_??";
     }
 }
 
 struct wz_directoryentry {
-    enum wz_directoryentry_type type;
+    enum wz_directoryentry_kind kind;
     union {
         struct {
             uint32_t unknown1;

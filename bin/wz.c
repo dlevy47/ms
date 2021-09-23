@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "wz/wz.h"
+#include "wz-cache/wz-cache.h"
 
 #include "lodepng/lodepng.h"
 
@@ -112,6 +113,27 @@ static int print_property(
                 if (print_propertycontainer(wz, f, &property->canvas.children, indent + 2)) {
                     return 1;
                 }
+
+                {
+                    static int image_index = 0;
+                    char filename[64] = {0};
+                    snprintf(filename, sizeof(filename), "%d.png", image_index);
+                    ++image_index;
+
+                    uint8_t* image = calloc(sizeof(*image), wz_image_rawsize(&property->canvas.image));
+
+                    err = wz_image_pixels(wz, &property->canvas.image, image);
+                    if (err.kind) {
+                        free(image);
+                        fprintf(stderr, "failed to get image pixels: ");
+                        wz_error_printto(&err, stderr);
+                        fprintf(stderr, "\n");
+                        return 1;
+                    }
+
+                    lodepng_encode32_file(filename, image, property->canvas.image.width, property->canvas.image.height);
+                    free(image);
+                }
             } break;
         case WZ_PROPERTY_KIND_VECTOR:
             {
@@ -213,12 +235,12 @@ static int print_directory(
             return 1;
         }
 
-        switch (entry.type) {
-            case WZ_DIRECTORYENTRY_TYPE_UNKNOWN:
+        switch (entry.kind) {
+            case WZ_DIRECTORYENTRY_KIND_UNKNOWN:
                 print_indent(indent, stdout);
                 printf("%u %hu %u\n", entry.unknown.unknown1, entry.unknown.unknown2, entry.unknown.offset);
                 break;
-            case WZ_DIRECTORYENTRY_TYPE_FILE:
+            case WZ_DIRECTORYENTRY_KIND_FILE:
                 {
                     wchar_t* name = calloc(sizeof(*name), entry.file.name.len + 1);
 
@@ -239,7 +261,7 @@ static int print_directory(
 
                     free(name);
                 } break;
-            case WZ_DIRECTORYENTRY_TYPE_SUBDIRECTORY:
+            case WZ_DIRECTORYENTRY_KIND_SUBDIRECTORY:
                 {
                     wchar_t* name = calloc(sizeof(*name), entry.subdirectory.name.len + 1);
 
@@ -272,15 +294,15 @@ static int print_directory(
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        fprintf(stderr, "usage: %s filename\n", argv[0]);
+    if (argc < 3) {
+        fprintf(stderr, "usage: %s filename path\n", argv[0]);
         return 1;
     }
 
     struct wz_error err = {0};
 
-    struct wz file = {0};
-    err = wz_open(&file, argv[1]);
+    struct wz wz = {0};
+    err = wz_open(&wz, argv[1]);
     if (err.kind) {
         fprintf(stderr, "failed to open file: ");
         wz_error_printto(&err, stderr);
@@ -288,19 +310,49 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    printf("(@%p) %s: %s, v%d\n", file.file_addr, file.header.ident, file.header.copyright, file.version);
-    printf("  file_size: %zu\n", file.header.file_size);
-    printf("  file_start: %u\n", file.header.file_start);
-    printf("  version_hash: %u\n", file.header.version_hash);
+    struct wz_cache cache = {0};
+    wz_cache_init(&cache, wz);
 
-    print_directory(
-            &file,
-            &file.root,
-            0);
+    printf("(@%p) %s: %s, v%d\n", cache.wz.file_addr, cache.wz.header.ident, cache.wz.header.copyright, cache.wz.version);
+    printf("  file_size: %zu\n", cache.wz.header.file_size);
+    printf("  file_start: %u\n", cache.wz.header.file_start);
+    printf("  version_hash: %u\n", cache.wz.header.version_hash);
 
-    err = wz_close(&file);
+    wchar_t* path = calloc(strlen(argv[2]) + 1, sizeof(*path));
+    swprintf(path, strlen(argv[2]) + 1, L"%s", argv[2]);
+
+    struct wz_cache_node* needle = NULL;
+    err = wz_cache_find(
+            &needle,
+            &cache,
+            path);
+    free(path);
     if (err.kind) {
-        fprintf(stderr, "failed to close file: ");
+        fprintf(stderr, "failed to find needle %ls: ", path);
+        wz_error_printto(&err, stderr);
+        fprintf(stderr, "\n");
+        return 1;
+    }
+
+    if (needle) {
+        switch (needle->kind) {
+            case WZ_CACHE_NODE_KIND_DIRECTORY:
+                print_directory(&cache.wz, &needle->directory, 0);
+                break;
+            case WZ_CACHE_NODE_KIND_FILE:
+                print_propertycontainer(&cache.wz, &needle->file, &needle->file.root, 0);
+                break;
+            case WZ_CACHE_NODE_KIND_PROPERTY:
+                print_property(&cache.wz, needle->property.containing_file, &needle->property.property, 0);
+                break;
+        }
+    } else {
+        printf("path not found\n");
+    }
+
+    err = wz_cache_free(&cache);
+    if (err.kind) {
+        fprintf(stderr, "failed to free cache: ");
         wz_error_printto(&err, stderr);
         fprintf(stderr, "\n");
         return 1;

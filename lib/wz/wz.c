@@ -294,25 +294,10 @@ struct wz_error wz_image_pixels(
         case 517:
             {
                 // Decompressed data is in a wonky format (each byte expands to 4).
-                uint32_t x = 0;
-                uint32_t y = 0;
-
-                uint32_t* to = (uint32_t*) out;
-                for (uint32_t i = 0; i < decompressed_len; ++i) {
-                    for (uint32_t j = 0; j < 8; ++j) {
-                        uint32_t b = decompressed[i] & (1 << (7 - j));
-                        b = b >> (7 - j);
-                        b = b * 0xFF;
-
-                        for (uint32_t k = 0; k < 32; ++k) {
-                            if (x == img->width) {
-                                x = 0;
-                                ++y;
-                            }
-
-                            *(to + y * 8 + x) = (b << 24) | (b << 16) | (b << 8) | b;
-                            ++x;
-                        }
+                for (uint32_t i = 0; i * 2 < decompressed_len; ++i) {
+                    for (uint32_t j = 0; j < 512; ++j) {
+                        out[i * 512 + j * 2] = decompressed[i * 2];
+                        out[i * 512 + j * 2 + 1] = decompressed[i * 2 + 1];
                     }
                 }
             } break;
@@ -547,58 +532,58 @@ struct wz_error wz_directoryentry_from(
         const struct wz* f,
         struct wz_directoryentry* d,
         uint8_t** off) {
-    uint8_t type = 0;
-    CHECK(_uint8_t_at(f, &type, off));
+    uint8_t kind = 0;
+    CHECK(_uint8_t_at(f, &kind, off));
 
-    switch (type) {
+    switch (kind) {
         case 1:
-            d->type = WZ_DIRECTORYENTRY_TYPE_UNKNOWN;
+            d->kind = WZ_DIRECTORYENTRY_KIND_UNKNOWN;
             break;
         case 2:
         case 4:
-            d->type = WZ_DIRECTORYENTRY_TYPE_FILE;
+            d->kind = WZ_DIRECTORYENTRY_KIND_FILE;
             break;
         case 3:
-            d->type = WZ_DIRECTORYENTRY_TYPE_SUBDIRECTORY;
+            d->kind = WZ_DIRECTORYENTRY_KIND_SUBDIRECTORY;
             break;
         default:
             {
                 struct wz_error err = {
-                    .kind = WZ_ERROR_KIND_UNKNOWNDIRECTORYENTRYTYPE,
-                    .unknown_directoryentry_type = type,
+                    .kind = WZ_ERROR_KIND_UNKNOWNDIRECTORYENTRYKIND,
+                    .unknown_directoryentry_kind = kind,
                 };
                 return err;
             }
     }
 
     struct wz_encryptedstring name = {0};
-    if (type == 1) {
-        d->type = WZ_DIRECTORYENTRY_TYPE_UNKNOWN;
+    if (kind == 1) {
+        d->kind = WZ_DIRECTORYENTRY_KIND_UNKNOWN;
         CHECK(_uint32_t_at(f, &d->unknown.unknown1, off));
         CHECK(_uint16_t_at(f, &d->unknown.unknown2, off));
         CHECK(_offset_at(f, &d->unknown.offset, off));
         return _NO_ERROR;
-    } else if (type == 2) {
-        // Type 2 files have the names and modified types at an offset.
+    } else if (kind == 2) {
+        // Kind 2 files have the names and modified kinds at an offset.
         uint32_t offset = 0;
         CHECK(_uint32_t_at(f, &offset, off));
 
         // At name_at,
-        //   u8 type
+        //   u8 kind
         //   encryptedstring name
         uint8_t* name_at = f->file_addr + f->header.file_start + offset;
         CHECK_OFFSET(f, name_at);
         wz_encryptedstring_from(f, &name, &name_at);
-        CHECK(_uint8_t_at(f, &type, &name_at));
+        CHECK(_uint8_t_at(f, &kind, &name_at));
     } else {
-        // Types 3 and 4 have the name inline.
+        // Kinds 3 and 4 have the name inline.
         wz_encryptedstring_from(f, &name, off);
     }
 
-    // We have another type check here because the type may have changed
+    // We have another check here because the kind may have changed
     // above.
-    if (type == 3) {
-        d->type = WZ_DIRECTORYENTRY_TYPE_SUBDIRECTORY;
+    if (kind == 3) {
+        d->kind = WZ_DIRECTORYENTRY_KIND_SUBDIRECTORY;
 
         d->subdirectory.name = name;
         CHECK(_compressedint_at(f, &d->subdirectory.size, off));
@@ -610,7 +595,7 @@ struct wz_error wz_directoryentry_from(
         uint8_t* subdirectory_at = f->file_addr + offset;
         CHECK(wz_directory_from(f, &d->subdirectory.subdirectory, &subdirectory_at));
     } else {
-        d->type = WZ_DIRECTORYENTRY_TYPE_FILE;
+        d->kind = WZ_DIRECTORYENTRY_KIND_FILE;
 
         d->file.name = name;
         CHECK(_compressedint_at(f, &d->file.size, off));
