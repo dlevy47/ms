@@ -114,7 +114,7 @@ static int print_property(
                     return 1;
                 }
 
-                {
+                if (0) {
                     static int image_index = 0;
                     char filename[64] = {0};
                     snprintf(filename, sizeof(filename), "%d.png", image_index);

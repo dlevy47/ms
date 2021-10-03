@@ -3,7 +3,8 @@
 CFLAGS="-Wall -g -I lib/ -I third-party/"
 LDFLAGS="-lz -lglfw -lGL"
 
-LIB_SRCS=$(ls lib/wz/*.c lib/wz-cache/*.c)
+LIB_SRCS=$(find lib third-party \
+    -name '*.c' ! -name '*.windows.c')
 
 clang \
     $CFLAGS \

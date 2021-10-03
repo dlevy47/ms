@@ -1,4 +1,4 @@
-#include "wz/wz-internal.h"
+#include "wz/internal.h"
 
 #include <errno.h>
 #include <fcntl.h>

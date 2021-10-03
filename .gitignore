@@ -3,3 +3,5 @@ data/
 ms.zip
 *.swp
 *.swo
+*.pdb
+*.obj

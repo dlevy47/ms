@@ -1,4 +1,4 @@
-#include "wz/wz-internal.h"
+#include "wz/internal.h"
 
 const uint8_t wz_key[] = {
 0x96,
