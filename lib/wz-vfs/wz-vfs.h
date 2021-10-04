@@ -21,11 +21,11 @@ struct wz_vfs_openedfile_node {
 
 	union {
         uint16_t uint16;
-        uint32_t uint32;
+        int32_t int32;
         float float32;
         double float64;
         wchar_t* string;
-        uint32_t vector[2];
+        int32_t vector[2];
         uint8_t* sound;
         wchar_t* uol;
         struct {

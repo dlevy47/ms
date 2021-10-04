@@ -111,10 +111,22 @@ struct error wz_directoryentry_from(
         d->kind = WZ_DIRECTORYENTRY_KIND_SUBDIRECTORY;
 
         d->subdirectory.name = name;
-        CHECK(_compressedint_at(f, &d->subdirectory.size, off),
+
+        int32_t size = 0;
+        CHECK(_compressedint_at(f, &size, off),
             ERROR_KIND_BADREAD, L"failed to read subdirectory size");
-        CHECK(_compressedint_at(f, &d->subdirectory.checksum, off),
+        if (size < 0)
+            return error_new(
+                    ERROR_KIND_BADREAD, L"read negative subdirectory size %d", size);
+        d->subdirectory.size = (uint32_t) size;
+
+        int32_t checksum = 0;
+        CHECK(_compressedint_at(f, &checksum, off),
             ERROR_KIND_BADREAD, L"failed to read subdirectory checksum");
+        if (size < 0)
+            return error_new(
+                    ERROR_KIND_BADREAD, L"read negative subdirectory checksum %d", checksum);
+        d->subdirectory.checksum = (uint32_t) checksum;
 
         uint32_t offset = 0;
         CHECK(_offset_at(f, &offset, off),
@@ -127,10 +139,22 @@ struct error wz_directoryentry_from(
         d->kind = WZ_DIRECTORYENTRY_KIND_FILE;
 
         d->file.name = name;
-        CHECK(_compressedint_at(f, &d->file.size, off),
+
+        int32_t size = 0;
+        CHECK(_compressedint_at(f, &size, off),
             ERROR_KIND_BADREAD, L"failed to read file size");
-        CHECK(_compressedint_at(f, &d->file.checksum, off),
-            ERROR_KIND_BADREAD, L"failed to read checksum checksum");
+        if (size < 0)
+            return error_new(
+                    ERROR_KIND_BADREAD, L"read negative file size %d", size);
+        d->file.size = (uint32_t) size;
+
+        int32_t checksum = 0;
+        CHECK(_compressedint_at(f, &checksum, off),
+            ERROR_KIND_BADREAD, L"failed to read file checksum");
+        if (size < 0)
+            return error_new(
+                    ERROR_KIND_BADREAD, L"read negative file checksum %d", checksum);
+        d->file.checksum = (uint32_t) checksum;
 
         uint32_t offset = 0;
         CHECK(_offset_at(f, &offset, off),
@@ -151,8 +175,13 @@ struct error wz_directory_from(
         const struct wz* f,
         struct wz_directory* d,
         uint8_t** off) {
-    CHECK(_compressedint_at(f, &d->count, off),
+    int32_t count = 0;
+    CHECK(_compressedint_at(f, &count, off),
         ERROR_KIND_BADREAD, L"failed to read child count");
+    if (count < 0)
+        return error_new(
+                ERROR_KIND_BADREAD, L"read negative child count %d", count);
+    d->count = (uint32_t) count;
     d->first_entry = *off;
 
     return _NO_ERROR;

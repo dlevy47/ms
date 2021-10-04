@@ -250,8 +250,8 @@ static struct error wz_vfs_openedfile_openfrom_property(
     case WZ_PROPERTY_KIND_UINT16:
     	of->nodes[cursor->node].uint16 = property->uint16;
     	break;
-    case WZ_PROPERTY_KIND_UINT32:
-    	of->nodes[cursor->node].uint32 = property->uint32;
+    case WZ_PROPERTY_KIND_INT32:
+    	of->nodes[cursor->node].int32 = property->int32;
     	break;
     case WZ_PROPERTY_KIND_FLOAT32:
     	of->nodes[cursor->node].float32 = property->float32;

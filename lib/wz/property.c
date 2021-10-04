@@ -138,8 +138,12 @@ struct error wz_propertycontainer_from(
         const struct wz* wz,
         struct wz_propertycontainer* c,
         uint8_t** off) {
-    CHECK(_compressedint_at(wz, &c->count, off),
+    int32_t count = 0;
+    CHECK(_compressedint_at(wz, &count, off),
         ERROR_KIND_BADREAD, L"failed to read property container count");
+    if (count < 0)
+        return error_new(ERROR_KIND_BADREAD, L"negative property container child count %d", count);
+    c->count = (uint32_t) count;
     c->first = *off;
 
     return _NO_ERROR;
@@ -149,8 +153,12 @@ struct error wz_namedpropertycontainer_from(
         const struct wz* wz,
         struct wz_namedpropertycontainer* c,
         uint8_t** off) {
-    CHECK(_compressedint_at(wz, &c->count, off),
+    int32_t count = 0;
+    CHECK(_compressedint_at(wz, &count, off),
         ERROR_KIND_BADREAD, L"failed to read named property container count");
+    if (count < 0)
+        return error_new(ERROR_KIND_BADREAD, L"negative named property container child count %d", count);
+    c->count = (uint32_t) count;
     c->first = *off;
 
     return _NO_ERROR;
@@ -160,10 +168,20 @@ static struct error wz_image_from(
         const struct wz* wz,
         struct wz_image* img,
         uint8_t** off) {
-    CHECK(_compressedint_at(wz, &img->width, off),
+    int32_t w = 0;
+    CHECK(_compressedint_at(wz, &w, off),
         ERROR_KIND_BADREAD, L"failed to read image width");
-    CHECK(_compressedint_at(wz, &img->height, off),
+    if (w < 0)
+        return error_new(ERROR_KIND_BADREAD, L"negative image width %d", w);
+    img->width = (uint32_t) w;
+
+    int32_t h = 0;
+    CHECK(_compressedint_at(wz, &h, off),
         ERROR_KIND_BADREAD, L"failed to read image height");
+    if (h < 0)
+        return error_new(ERROR_KIND_BADREAD, L"negative image height %d", h);
+    img->height = (uint32_t) h;
+
     CHECK(_compressedint_at(wz, &img->format, off),
         ERROR_KIND_BADREAD, L"failed to read image format");
     CHECK(_uint8_t_at(wz, &img->format2, off),
@@ -453,9 +471,9 @@ struct error wz_property_from(
             } break;
         case 0x03:
             {
-                p->kind = WZ_PROPERTY_KIND_UINT32;
-                CHECK(_compressedint_at(wz, &p->uint32, off),
-                    ERROR_KIND_BADREAD, L"failed to read u32 property");
+                p->kind = WZ_PROPERTY_KIND_INT32;
+                CHECK(_compressedint_at(wz, &p->int32, off),
+                    ERROR_KIND_BADREAD, L"failed to read i32 property");
             } break;
         case 0x04:
             {

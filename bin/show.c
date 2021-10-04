@@ -71,8 +71,8 @@ static void dump(
     case WZ_PROPERTY_KIND_UINT16:
         printf("[u16] %hu\n", node->uint16);
         break;
-    case WZ_PROPERTY_KIND_UINT32:
-        printf("[u32] %u\n", node->uint32);
+    case WZ_PROPERTY_KIND_INT32:
+        printf("[i32] %d\n", node->int32);
         break;
     case WZ_PROPERTY_KIND_FLOAT32:
         printf("[f32] %f\n", node->float32);
@@ -84,7 +84,7 @@ static void dump(
     	printf("[string] %ls\n", node->string);
     	break;
     case WZ_PROPERTY_KIND_VECTOR:
-        printf("[vector] %u, %u\n", node->vector[0], node->vector[1]);
+        printf("[vector] %d, %d\n", node->vector[0], node->vector[1]);
         break;
     case WZ_PROPERTY_KIND_SOUND:
         printf("[sound] @%p\n", node->sound);
@@ -96,7 +96,7 @@ static void dump(
         {
             int encrypted = (node->canvas.image.data[0] != 0x78 ||
                     node->canvas.image.data[1] != 0x9C);
-            printf("[canvas] %u x %u (%u %u) (%s) ",
+            printf("[canvas] %u x %u (%d %d) (%s) ",
                     node->canvas.image.width, node->canvas.image.height,
                     node->canvas.image.format, node->canvas.image.format2,
                     (encrypted ? "encrypted" : "not encrypted"));

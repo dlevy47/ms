@@ -48,7 +48,7 @@ struct wz_namedpropertycontainer {
 struct wz_image {
     uint32_t width;
     uint32_t height;
-    uint32_t format;
+    int32_t format;
     uint8_t format2;
     uint32_t unknown1;
     uint32_t length;
@@ -78,7 +78,7 @@ enum wz_property_kind {
     WZ_PROPERTY_KIND_UNSPECIFIED,
     WZ_PROPERTY_KIND_NULL,
     WZ_PROPERTY_KIND_UINT16,
-    WZ_PROPERTY_KIND_UINT32,
+    WZ_PROPERTY_KIND_INT32,
     WZ_PROPERTY_KIND_FLOAT32,
     WZ_PROPERTY_KIND_FLOAT64,
     WZ_PROPERTY_KIND_STRING,
@@ -96,14 +96,14 @@ struct wz_property {
 
     union {
         uint16_t uint16;
-        uint32_t uint32;
+        int32_t int32;
         float float32;
         double float64;
         struct wz_encryptedstring string;
         struct wz_propertycontainer container;
         struct wz_namedpropertycontainer named_container;
         struct wz_canvas canvas;
-        uint32_t vector[2];
+        int32_t vector[2];
         uint8_t* sound;
         struct wz_encryptedstring uol;
     };

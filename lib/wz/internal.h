@@ -167,23 +167,23 @@ static inline struct error _uint8_t_at(
     return err;
 }
 
-// _compressedint_at reads an uint32_t at the specified offset, in the low-value
+// _compressedint_at reads an int32_t at the specified offset, in the low-value
 // compressed format. The offset is incremented along the way.
 static inline struct error _compressedint_at(
         const struct wz* f,
-        uint32_t* value_out,
+        int32_t* value_out,
         uint8_t** off) {
     struct error err = {0};
     uint8_t first = 0;
     CHECK(_uint8_t_at(f, &first, off),
         ERROR_KIND_BADREAD, L"failed to read first byte of compressed int");
     if ((int8_t) first != -128) {
-        *value_out = (uint32_t) first;
+        *value_out = (int32_t) first;
         return err;
     }
 
-    uint32_t value = 0;
-    CHECK(_uint32_t_at(f, &value, off),
+    int32_t value = 0;
+    CHECK(_int32_t_at(f, &value, off),
         ERROR_KIND_BADREAD, L"failed to read compressed int");
     *value_out = value;
     return err;
