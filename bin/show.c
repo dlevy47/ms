@@ -93,7 +93,14 @@ static void dump(
     	printf("[uol] %ls\n", node->uol);
     	break;
     case WZ_PROPERTY_KIND_CANVAS:
-    	printf("[canvas] %u x %u ", node->canvas.image.width, node->canvas.image.height);
+        {
+            int encrypted = (node->canvas.image.data[0] != 0x78 ||
+                    node->canvas.image.data[1] != 0x9C);
+            printf("[canvas] %u x %u (%u %u) (%s) ",
+                    node->canvas.image.width, node->canvas.image.height,
+                    node->canvas.image.format, node->canvas.image.format2,
+                    (encrypted ? "encrypted" : "not encrypted"));
+        }
     case WZ_PROPERTY_KIND_CONTAINER:
     case WZ_PROPERTY_KIND_NAMEDCONTAINER:
     	{

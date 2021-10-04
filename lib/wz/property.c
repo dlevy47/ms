@@ -267,8 +267,8 @@ struct error wz_image_pixels(
                 return err;
             }
 
-            memcpy(to, block, blocksize- z.avail_out);
-            to += z.avail_out;
+            memcpy(to, block, blocksize - z.avail_out);
+            to += blocksize - z.avail_out;
         } while (z_err != Z_STREAM_END && z.avail_in);
 
         inflateEnd(&z);
