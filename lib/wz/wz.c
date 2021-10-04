@@ -96,10 +96,10 @@ struct error wz_directoryentry_from(
         //   encryptedstring name
         uint8_t* name_at = f->file_addr + f->header.file_start + offset;
         CHECK_OFFSET(f, name_at);
-        CHECK(wz_encryptedstring_from(f, &name, &name_at),
-            ERROR_KIND_BADREAD, L"failed to read relocated name file name");
         CHECK(_uint8_t_at(f, &kind, &name_at),
             ERROR_KIND_BADREAD, L"failed to read relocated name file name kind");
+        CHECK(wz_encryptedstring_from(f, &name, &name_at),
+            ERROR_KIND_BADREAD, L"failed to read relocated name file name");
     } else {
         // Kinds 3 and 4 have the name inline.
         wz_encryptedstring_from(f, &name, off);
