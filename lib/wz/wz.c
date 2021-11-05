@@ -102,7 +102,8 @@ struct error wz_directoryentry_from(
             ERROR_KIND_BADREAD, L"failed to read relocated name file name");
     } else {
         // Kinds 3 and 4 have the name inline.
-        wz_encryptedstring_from(f, &name, off);
+        CHECK(wz_encryptedstring_from(f, &name, off),
+                ERROR_KIND_BADREAD, L"failed to read inline file name");
     }
 
     // We have another check here because the kind may have changed
