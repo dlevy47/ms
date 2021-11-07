@@ -9,7 +9,9 @@ template<typename T>
             T* x,
             uint8_t** address) {
         if (!wz->file.valid(*address, sizeof(T)))
-            return error_new(Error::INVALIDOFFSET);
+            return error_new(Error::INVALIDOFFSET)
+                << "address 0x" << std::hex << *address
+                << " is outside of file extents " << wz->file;
 
         *x = *reinterpret_cast<T*>(*address);
         *address += sizeof(T);

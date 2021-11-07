@@ -21,6 +21,8 @@ struct Error {
         UNKNOWNPROPERTYKINDNAME,
         UNKNOWNIMAGEFORMAT,
         DECOMPRESSIONFAILED,
+        VISITFAILED,
+        FILEOPENFAILED,
     };
 
     struct Frame {

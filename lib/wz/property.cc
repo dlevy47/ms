@@ -2,6 +2,7 @@
 #include "wz/wz.hh"
 #include "wz/directory.hh"
 
+#include <fstream>
 #include <zlib.h>
 
 namespace wz {
@@ -47,9 +48,6 @@ Error String::parse(
         p->address += s->len;
     }
 
-    if (!p->wz->file.valid(p->address, 1))
-        return error_new(Error::INVALIDOFFSET)
-            << "string length led past file extents";
     return Error();
 }
 
@@ -129,42 +127,26 @@ Error String::decrypt(wchar_t* s) const {
 }
 
 Error Image::pixels(uint8_t* out) const {
-    uint8_t* compressed_start = data;
-    uint32_t compressed_length = length;
-
     // Some image data requires decrypting.
-    if (data[0] != 0x78 || data[1] != 0x9C) {
-        compressed_start = out;
-        compressed_length = 0;
+    bool is_encrypted = !(
+            (data[0] == 0x78 && data[1] == 0x9C) ||
+            (data[0] == 0x78 && data[1] == 0xDA) ||
+            (data[0] == 0x78 && data[1] == 0x01) ||
+            (data[0] == 0x78 && data[1] == 0x5E));
+    uint32_t encrypted_block_size = 0;
+    uint32_t encrypted_block_cursor = 0;
 
-        uint8_t* end = data + length;
-
-        Parser p;
-
-        uint8_t* to = out;
-        uint8_t* from = data;
-        while (from < end) {
-            uint32_t blocksize = 0;
-
-            p.address = from;
-            CHECK(p.u32(&blocksize),
-                Error::BADREAD) << "failed to read image blocksize";
-
-            for (uint32_t i = 0; i < blocksize; ++i) {
-                *to = *from ^ wz_key[i];
-                ++to;
-                ++from;
-            }
-            compressed_length += blocksize;
-        }
-    }
+    uint8_t* source = data;
+    uint8_t* source_end = source + length - 1; // The last byte of image data seems to be, universally, unused.
 
     // Determine the length of the decompressed data.
     uint32_t decompressed_len = 0;
     switch (format + format2) {
         case 1:
-        case 2:
             decompressed_len = 2 * height * width;
+            break;
+        case 2:
+            decompressed_len = 4 * height * width;
             break;
         case 513:
             decompressed_len = 2 * height * width;
@@ -191,29 +173,85 @@ Error Image::pixels(uint8_t* out) const {
         // Operate in blocks of 4096 bytes.
         enum { blocksize = 4096 };
 
-        uint8_t block[blocksize] = {0};
+        uint8_t input_block[blocksize] = {0};
+        uint8_t output_block[blocksize] = {0};
         z_stream z = {0};
         int z_err = Z_OK;
 
-        z.next_in = compressed_start;
-        z.avail_in = compressed_length;
         inflateInit(&z);
 
         do {
-            z.next_out = block;
+            z.next_out = output_block;
             z.avail_out = blocksize;
 
+            // Do we need to feed more input data?
+            if (z.avail_in == 0) {
+                // Are we at the end?
+                if (source >= source_end)
+                    break;
+
+                if (is_encrypted) {
+                    // For encrypted images, we need to decrypt the data and then copy it into
+                    // input_block.
+
+                    // Are we in the middle of an input block?
+                    if (encrypted_block_cursor >= encrypted_block_size) {
+                        // If we aren't, we need to start a new block.
+
+                        // There may not be 4 bytes remaining to read a blocksize. If so, break early.
+                        if (source_end - source < 4) {
+                            break;
+                        }
+
+                        encrypted_block_cursor = 0;
+                        encrypted_block_size = *reinterpret_cast<uint32_t*>(source);
+                        source += 4;
+
+                        // Quick check that this encrypted_block_size value is valid.
+                        if (source + encrypted_block_size > source_end) {
+                            return error_new(Error::BADREAD)
+                                << "encrypted image block size extends past image data: " << encrypted_block_size;
+                        }
+                    }
+
+                    size_t next_chunk_size = encrypted_block_size - encrypted_block_cursor;
+                    if (next_chunk_size > blocksize) {
+                        next_chunk_size = blocksize;
+                    }
+
+                    for (size_t i = 0; i < next_chunk_size; ++i) {
+                        input_block[i] = *source ^ wz_key[encrypted_block_cursor];
+
+                        ++encrypted_block_cursor;
+                        ++source;
+                    }
+
+                    z.next_in = input_block;
+                    z.avail_in = next_chunk_size;
+                } else {
+                    // For images that are not encrypted, just feed zlib directly from source.
+                    size_t next_chunk_size = source_end - source;
+                    if (next_chunk_size > blocksize) {
+                        next_chunk_size = blocksize;
+                    }
+
+                    z.next_in = source;
+                    z.avail_in = next_chunk_size;
+                    source += next_chunk_size;
+                }
+            }
+
             z_err = inflate(&z, Z_NO_FLUSH);
-            if (z_err != Z_STREAM_END && z_err != Z_OK) {
+            if (z_err < 0) {
                 inflateEnd(&z);
 
                 return error_new(Error::DECOMPRESSIONFAILED)
-                    << "zlib decompression failed: " << z_err;
+                    << "zlib decompression failed: " << z_err << ": " << (z.msg ? z.msg : "");
             }
 
-            memcpy(to, block, blocksize - z.avail_out);
+            memcpy(to, output_block, blocksize - z.avail_out);
             to += blocksize - z.avail_out;
-        } while (z_err != Z_STREAM_END && z.avail_in);
+        } while (z_err != Z_STREAM_END);
 
         inflateEnd(&z);
     }

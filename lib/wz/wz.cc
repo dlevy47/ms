@@ -79,7 +79,7 @@ Error Wz::parse(
 
     p->address = wz->file.start + wz->header.file_start;
     CHECK(p->u16(&wz->header.version),
-            Error::BADREAD) << "failed to read header version";
+            Error::BADREAD) << "failed to read header version at " << wz->header.file_start;
 
     // Determine file version.
     for (uint16_t try_version = 1; try_version < 0x7F; ++try_version) {

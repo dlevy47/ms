@@ -39,6 +39,7 @@ for source, object in objects.items():
         'cl.exe',
         '/Fo' + object,
         '/c',
+        '/std:c++20',
         '/Z7',
         '/EHsc',
         '/Ilib\\',
@@ -55,8 +56,8 @@ for dirpath, _, files in os.walk('bin'):
         p = subprocess.run([
             'cl.exe',
             '/Febuild\\' + base + '.exe',
-            '/std:c++17',
-            '/fsanitize=address',
+            '/std:c++20',
+            # '/fsanitize=address',
             '/Z7',
             '/EHsc',
             '/Ilib\\',
