@@ -8,9 +8,12 @@
 struct Error {
     enum Kind {
         NONE,
+        CONVERTFAILED,
+        CONVERTFAILED_TRAILINGTEXT,
         BADREAD,
         INVALIDOFFSET,
         OPENFAILED,
+        NOTFOUND,
         CLOSEFAILED,
         FILEPARSEERROR1,
         FILEPARSEERROR2,
@@ -23,6 +26,32 @@ struct Error {
         DECOMPRESSIONFAILED,
         VISITFAILED,
         FILEOPENFAILED,
+        GLERROR,
+        UIERROR,
+        INVALIDUSAGE,
+        PROPERTYTYPEMISMATCH,
+        FRAMELOADFAILED,
+        SPRITELOADFAILED,
+        RESOURCELOADFAILED,
+        BACKGROUND_LOAD_MISSINGATTRIBUTES,
+        BACKGROUND_LOAD_MISSINGFILENAME,
+        BACKGROUND_LOAD_MISSINGFILE,
+        BACKGROUND_LOAD_MISSINGFRAME,
+        BACKGROUND_LOAD_FRAMELOADFAILED,
+        TILE_LOAD_MISSINGATTRIBUTES,
+        TILESET_LOAD_MISSINGFILE,
+        TILESET_LOAD_FRAMELOADFAILED,
+        OBJECT_LOAD_MISSINGATTRIBUTES,
+        OBJECTSET_LOAD_MISSINGFILE,
+        OBJECTSET_LOAD_SPRITELOADFAILED,
+        LAYER_LOAD_MISSINGATTRIBUTES,
+        MAP_LOAD_FOOTHOLDLOADFAILED,
+        MAP_LOAD_HELPERLOADFAILED,
+        MAP_LOAD_LADDERLOADFAILED,
+        MAP_LOAD_LAYERLOADFAILED,
+        MAP_LOAD_MISSINGATTRIBUTES,
+        MAP_LOAD_PORTALLOADFAILED,
+        WZ_DESERIALIZE_FAILED,
     };
 
     struct Frame {
@@ -80,7 +109,18 @@ struct Error {
             os << f.file << ":" << f.line << ": " << f.message.str() << "\n";
         }
     }
+
+    std::wstring str() const {
+        std::wstringstream ss;
+        print(ss);
+        return ss.str();
+    }
 };
+
+inline std::wostream& operator<<(std::wostream& os, const Error& e) {
+    e.print(os);
+    return os;
+}
 
 #define error_push(e, k) \
     e.push(k, __FILE__, __LINE__)

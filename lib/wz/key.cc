@@ -1,6 +1,10 @@
 #include <stdint.h>
 
-const uint8_t wz_key[] = {
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern const uint8_t wz_key[] = {
 0x96,
 0xAE,
 0x3F,
@@ -65552,3 +65556,7 @@ const uint8_t wz_key[] = {
 0xF2,
 0x94,
 0x96};
+
+#ifdef __cplusplus
+}
+#endif

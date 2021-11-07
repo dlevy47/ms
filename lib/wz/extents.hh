@@ -6,10 +6,10 @@
 namespace wz {
 
 struct Extents {
-    uint8_t* start;
-    uint8_t* end;
+    const uint8_t* start;
+    const uint8_t* end;
 
-    bool valid(uint8_t* at, size_t count) const {
+    bool valid(const uint8_t* at, size_t count) const {
         return at >= start && (at + count) <= end;
     }
 };

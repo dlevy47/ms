@@ -1,5 +1,7 @@
+// wz contains a library for one-copy, zero-allocation reading and parsing of WZ files.
 #pragma once
 
+#include "p.hh"
 #include "util/error.hh"
 #include "wz/directory.hh"
 #include "wz/parser.hh"
@@ -20,12 +22,19 @@ struct Header {
 };
 
 struct Wz {
+    // header is the materialized header information of the wz file.
     Header header;
-    uint16_t version;
 
-    int fd;
+    // version is the version of the data contained in the wz file.
+    N<uint16_t> version;
+
+    // fd is the OS file descriptor of the opened wz file.
+    N<int> fd;
+
+    // file is the memory extents of the opened wz file, once mapped into memory.
     Extents file;
 
+    // root is the root wz directory that contains all the data in the file.
     Directory root;
 
     Wz() {}
@@ -39,6 +48,7 @@ struct Wz {
             Parser* p);
     Error close();
 
+    Wz(Wz&&) = default;
     Wz(const Wz&) = delete;
 };
 

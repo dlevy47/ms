@@ -7,26 +7,26 @@ namespace wz {
 template<typename T>
     Error Parser::primitive(
             T* x,
-            uint8_t** address) {
+            const uint8_t** address) {
         if (!wz->file.valid(*address, sizeof(T)))
             return error_new(Error::INVALIDOFFSET)
                 << "address 0x" << std::hex << *address
                 << " is outside of file extents " << wz->file;
 
-        *x = *reinterpret_cast<T*>(*address);
+        *x = *reinterpret_cast<const T*>(*address);
         *address += sizeof(T);
 
         return Error();
     }
 
-template Error Parser::primitive<int8_t>(int8_t* x, uint8_t** address);
-template Error Parser::primitive<uint8_t>(uint8_t* x, uint8_t** address);
-template Error Parser::primitive<uint16_t>(uint16_t* x, uint8_t** address);
-template Error Parser::primitive<int32_t>(int32_t* x, uint8_t** address);
-template Error Parser::primitive<uint32_t>(uint32_t* x, uint8_t** address);
-template Error Parser::primitive<uint64_t>(uint64_t* x, uint8_t** address);
-template Error Parser::primitive<float>(float* x, uint8_t** address);
-template Error Parser::primitive<double>(double* x, uint8_t** address);
+template Error Parser::primitive<int8_t>(int8_t* x, const uint8_t** address);
+template Error Parser::primitive<uint8_t>(uint8_t* x, const uint8_t** address);
+template Error Parser::primitive<uint16_t>(uint16_t* x, const uint8_t** address);
+template Error Parser::primitive<int32_t>(int32_t* x, const uint8_t** address);
+template Error Parser::primitive<uint32_t>(uint32_t* x, const uint8_t** address);
+template Error Parser::primitive<uint64_t>(uint64_t* x, const uint8_t** address);
+template Error Parser::primitive<float>(float* x, const uint8_t** address);
+template Error Parser::primitive<double>(double* x, const uint8_t** address);
 
 Error Parser::wstring_fixedlength(
         std::wstring* s,

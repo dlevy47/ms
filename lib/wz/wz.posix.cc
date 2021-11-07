@@ -1,11 +1,13 @@
-#include "wz/internal.h"
-
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int _wz_openfileforread(
         int* handle_out,
@@ -37,7 +39,7 @@ int _wz_closefile(
 }
 
 int _wz_mapfile(
-        void** addr_out,
+        const void** addr_out,
         int handle,
         size_t length) {
     void* addr = mmap(
@@ -56,11 +58,15 @@ int _wz_mapfile(
 }
 
 int _wz_unmapfile(
-        void* addr,
+        const void* addr,
         size_t length) {
-    if (munmap(addr, length) == -1) {
+    if (munmap((void*) addr, length) == -1) {
         return errno;
     }
 
     return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif

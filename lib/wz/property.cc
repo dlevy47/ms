@@ -2,7 +2,9 @@
 #include "wz/wz.hh"
 #include "wz/directory.hh"
 
+#include <cstring>
 #include <fstream>
+#define ZLIB_CONST
 #include <zlib.h>
 
 namespace wz {
@@ -54,7 +56,7 @@ Error String::parse(
 Error String::parse_withoffset(
         String* s,
         Parser* p,
-        const File* f) {
+        const uint8_t* file_base) {
     uint8_t kind = 0;
     CHECK(p->u8(&kind),
             Error::BADREAD) << "failed to read relocated string offset kind";
@@ -76,7 +78,7 @@ Error String::parse_withoffset(
                         Error::BADREAD) << "failed to read relative string offset";
 
                 Parser p2 = *p;
-                p2.address = f->base + relative;
+                p2.address = file_base + relative;
                 CHECK(String::parse(s, &p2),
                         Error::BADREAD) << "failed to read offset string";
             } break;
@@ -96,7 +98,7 @@ Error String::decrypt(wchar_t* s) const {
         case ONEBYTE:
             {
                 uint8_t mask = 0xAA;
-                uint8_t* from = at;
+                const uint8_t* from = at;
                 for (uint32_t i = 0; i < len; ++i) {
                     *s = *from;
 
@@ -110,7 +112,7 @@ Error String::decrypt(wchar_t* s) const {
         case TWOBYTE:
             {
                 uint16_t mask = 0xAAAA;
-                uint16_t* from = reinterpret_cast<uint16_t*>(at);
+                const uint16_t* from = reinterpret_cast<const uint16_t*>(at);
                 for (uint32_t i = 0; i < len; ++i) {
                     *s = *from;
 
@@ -128,47 +130,29 @@ Error String::decrypt(wchar_t* s) const {
 
 Error Image::pixels(uint8_t* out) const {
     // Some image data requires decrypting.
-    bool is_encrypted = !(
-            (data[0] == 0x78 && data[1] == 0x9C) ||
-            (data[0] == 0x78 && data[1] == 0xDA) ||
-            (data[0] == 0x78 && data[1] == 0x01) ||
-            (data[0] == 0x78 && data[1] == 0x5E));
+    bool is_encrypted = this->is_encrypted();
     uint32_t encrypted_block_size = 0;
     uint32_t encrypted_block_cursor = 0;
 
-    uint8_t* source = data;
-    uint8_t* source_end = source + length - 1; // The last byte of image data seems to be, universally, unused.
+    const uint8_t* source = data;
+    const uint8_t* source_end = source + length - 1; // The last byte of image data seems to be, universally, unused.
 
-    // Determine the length of the decompressed data.
-    uint32_t decompressed_len = 0;
-    switch (format + format2) {
-        case 1:
-            decompressed_len = 2 * height * width;
-            break;
-        case 2:
-            decompressed_len = 4 * height * width;
-            break;
-        case 513:
-            decompressed_len = 2 * height * width;
-            break;
-        case 517:
-            decompressed_len = height * width / 128;
-            break;
-        default:
-            {
-                return error_new(Error::UNKNOWNIMAGEFORMAT)
-                    << "unknown image format " << format << " format2 " << format2;
-            }
+    uint32_t decompressed_len = rawsize();
+
+    if ((format + format2) == 1) {
+        // Type 1 images decompress into a smaller buffer, and then need to
+        // be expanded later.
+        decompressed_len /= 2;
+    } else if ((format + format2) == 517) {
+        // Type 517 images are weird: each final row is calculated from a single byte.
+        decompressed_len = width * height / 128;
     }
 
-    // For cases where the decompressed data is smaller than the final format,
-    // decompress into a later location in the buffer so that we can expand
-    // in place.
-    uint8_t* decompressed = out + (rawsize() - decompressed_len);
+    uint32_t decompressed = 0;
 
     // Now decompress.
     {
-        uint8_t* to = decompressed;
+        uint8_t* to = out + (rawsize() - decompressed_len);
 
         // Operate in blocks of 4096 bytes.
         enum { blocksize = 4096 };
@@ -204,7 +188,7 @@ Error Image::pixels(uint8_t* out) const {
                         }
 
                         encrypted_block_cursor = 0;
-                        encrypted_block_size = *reinterpret_cast<uint32_t*>(source);
+                        encrypted_block_size = *reinterpret_cast<const uint32_t*>(source);
                         source += 4;
 
                         // Quick check that this encrypted_block_size value is valid.
@@ -249,6 +233,12 @@ Error Image::pixels(uint8_t* out) const {
                     << "zlib decompression failed: " << z_err << ": " << (z.msg ? z.msg : "");
             }
 
+            decompressed += blocksize - z.avail_out;
+            if (decompressed > decompressed_len) {
+                return error_new(Error::DECOMPRESSIONFAILED)
+                    << "would decompress past buffer: " << decompressed << " > " << decompressed_len;
+            }
+
             memcpy(to, output_block, blocksize - z.avail_out);
             to += blocksize - z.avail_out;
         } while (z_err != Z_STREAM_END);
@@ -256,49 +246,38 @@ Error Image::pixels(uint8_t* out) const {
         inflateEnd(&z);
     }
 
-    // Finally, convert the pixels (in cases where the format is different).
-    switch (format + format2) {
-        case 1:
-            {
-                // Decompressed data is BGRA4, so expand every two bytes into 4.
-                uint32_t* to = (uint32_t*) out;
-                for (uint32_t i = 0; i < decompressed_len; i += 2) {
-                    uint32_t b = decompressed[i] & 0x0F;
-                    b |= b << 4;
-                    uint32_t g = decompressed[i] & 0xF0;
-                    g |= g >> 4;
-                    uint32_t r = decompressed[i + 1] & 0x0F;
-                    r |= r << 4;
-                    uint32_t a = decompressed[i + 1] & 0xF0;
-                    a |= a >> 4;
+    // Perform special expansion.
+    if ((format + format2) == 1) {
+        uint8_t* from = out + (rawsize() - decompressed_len);
+        uint8_t* to = out;
 
-                    *to = (
-                            (a << 24) |
-                            (b << 16) |
-                            (g <<  8) |
-                            (r <<  0));
-                    ++to;
+        for (uint32_t i = 0, l = 2 * width * height; i < l; ++i) {
+            to[0] = (*from & 0x0F) * 0x11;
+            to[1] = ((*from & 0xF0) >> 4) * 0x11;
+
+            to += 2;
+            ++from;
+        }
+    } else if ((format + format2) == 517) {
+        uint8_t* from = out + (rawsize() - decompressed_len);
+        uint8_t* to = out;
+
+        for (uint32_t i = 0; i < decompressed_len; ++i) {
+            for (uint32_t bit = 0; bit < 8; ++bit) {
+                uint32_t b = *from & (1 << (7 - bit));
+                b >>= 7 - bit;
+                b *= 0xFF;
+
+                for (uint32_t k = 0; k < 16; ++k) {
+                    to[0] = b;
+                    to[1] = b;
+
+                    to += 2;
                 }
-            } break;
-        case 2:
-        case 513:
-            // Nothing to do here.
-            break;
-        case 517:
-            {
-                // Decompressed data is in a wonky format (each byte expands to 4).
-                for (uint32_t i = 0; i * 2 < decompressed_len; ++i) {
-                    for (uint32_t j = 0; j < 512; ++j) {
-                        out[i * 512 + j * 2] = decompressed[i * 2];
-                        out[i * 512 + j * 2 + 1] = decompressed[i * 2 + 1];
-                    }
-                }
-            } break;
-        default:
-            {
-                return error_new(Error::UNKNOWNIMAGEFORMAT)
-                    << "unknown image format " << format << " format2 " << format2;
             }
+
+            ++from;
+        }
     }
 
     return Error();
@@ -341,7 +320,7 @@ Error Image::parse(
 Error Canvas::parse(
         Canvas* x,
         Parser* p,
-        const File* f) {
+        const uint8_t* file_base) {
     uint8_t has_children = 0;
     CHECK(p->u8(&has_children),
             Error::BADREAD) << "failed to read canvas first byte";
@@ -350,14 +329,14 @@ Error Canvas::parse(
         // Skip 2 unknown bytes.
         p->address += 2;
 
-        CHECK(PropertyContainer::parse(&x->children, p, f),
+        CHECK(PropertyContainer::parse(&x->children, p, file_base),
                 Error::BADREAD) << "failed to read canvas child container";
 
         // Unfortunately, we have to parse the entire children container
         // to know where the image starts.
         for (uint32_t i = 0; i < x->children.count; ++i) {
             Property x;
-            CHECK(Property::parse(&x, p, f),
+            CHECK(Property::parse(&x, p, file_base),
                     Error::BADREAD) << "failed to read canvas child " << i;
         }
     } else {
@@ -372,8 +351,8 @@ Error Canvas::parse(
 Error Property::parse(
         Property* x,
         Parser* p,
-        const File* f) {
-    CHECK(String::parse_withoffset(&x->name, p, f),
+        const uint8_t* file_base) {
+    CHECK(String::parse_withoffset(&x->name, p, file_base),
             Error::BADREAD) << "failed to read property name";
 
     uint8_t kind = 0;
@@ -422,7 +401,7 @@ Error Property::parse(
         case 0x08:
             {
                 x->kind = STRING;
-                CHECK(String::parse_withoffset(&x->string, p, f),
+                CHECK(String::parse_withoffset(&x->string, p, file_base),
                         Error::BADREAD) << "failed to read string property";
             } break;
         case 0x09:
@@ -430,9 +409,9 @@ Error Property::parse(
                 uint32_t end_offset = 0;
                 CHECK(p->u32(&end_offset),
                         Error::BADREAD) << "failed to read named property end";
-                uint8_t* end = p->address + end_offset;
+                const uint8_t* end = p->address + end_offset;
 
-                CHECK(Property::parse_named(x, p, f, &x->name),
+                CHECK(Property::parse_named(x, p, file_base, &x->name),
                         Error::BADREAD) << "failed to read named property";
 
                 p->address = end;
@@ -450,10 +429,10 @@ Error Property::parse(
 Error Property::parse_named(
         Property* x,
         Parser* p,
-        const File* f,
+        const uint8_t* file_base,
         const String* name) {
     String kind;
-    CHECK(String::parse_withoffset(&kind, p, f),
+    CHECK(String::parse_withoffset(&kind, p, file_base),
             Error::BADREAD) << "failed to read kind of named property";
 
     if (name) {
@@ -476,7 +455,7 @@ Error Property::parse_named(
         // Skip unknown 2 bytes;
         p->address += 2;
 
-        CHECK(PropertyContainer::parse(&x->container, p, f),
+        CHECK(PropertyContainer::parse(&x->container, p, file_base),
                 Error::BADREAD) << "failed to read property container";
     } else if (::wcscmp(kind_name, L"Canvas") == 0) {
         x->kind = CANVAS;
@@ -484,7 +463,7 @@ Error Property::parse_named(
         // Skip unknown byte.
         ++p->address;
 
-        CHECK(Canvas::parse(&x->canvas, p, f),
+        CHECK(Canvas::parse(&x->canvas, p, file_base),
                 Error::BADREAD) << "failed to read canvas";
     } else if (::wcscmp(kind_name, L"Shape2D#Vector2D") == 0) {
         x->kind = VECTOR;
@@ -496,7 +475,7 @@ Error Property::parse_named(
     } else if (::wcscmp(kind_name, L"Shape2D#Convex2D") == 0) {
         x->kind = NAMEDCONTAINER;
 
-        CHECK(NamedPropertyContainer::parse(&x->named_container, p, f),
+        CHECK(NamedPropertyContainer::parse(&x->named_container, p, file_base),
                 Error::BADREAD) << "failed to read named property container";
     } else if (::wcscmp(kind_name, L"Sound_DX8") == 0) {
         x->kind = SOUND;
@@ -508,7 +487,7 @@ Error Property::parse_named(
         // Skip unknown byte.
         ++p->address;
 
-        CHECK(String::parse(&x->uol, p),
+        CHECK(String::parse_withoffset(&x->uol, p, file_base),
                 Error::BADREAD) << "failed to read UOL";
     } else
         return error_new(Error::UNKNOWNPROPERTYKINDNAME)

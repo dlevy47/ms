@@ -50,7 +50,7 @@ Error File::parse(
     CHECK(PropertyContainer::parse(
                 &f->root,
                 p,
-                f),
+                f->base),
             Error::BADREAD) << "failed to read child container";
     return Error();
 }

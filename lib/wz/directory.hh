@@ -22,7 +22,7 @@ struct EntryContainer {
     };
 
     uint32_t count;
-    uint8_t* first;
+    const uint8_t* first;
 
     Iterator iterator(const Wz* wz) const {
         Iterator it;
@@ -49,7 +49,7 @@ struct EntryContainer {
 };
 
 struct File {
-    uint8_t* base;
+    const uint8_t* base;
     PropertyContainer root;
 
     static Error parse(

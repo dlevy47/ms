@@ -10,12 +10,12 @@ extern "C" {
             int handle);
 
     int _wz_mapfile(
-            void** addr_out,
+            const void** addr_out,
             int handle,
             size_t length);
 
     int _wz_unmapfile(
-            void* addr,
+            const void* addr,
             size_t length);
 }
 
@@ -54,7 +54,7 @@ Error Wz::open(
             << "failed to open file for read: " << ret;
 
     ret = _wz_mapfile(
-            reinterpret_cast<void**>(&wz->file.start),
+            reinterpret_cast<const void**>(&wz->file.start),
             wz->fd,
             file_size);
     if (ret) {

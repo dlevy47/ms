@@ -1,6 +1,6 @@
 build/
 data/
-ms.zip
+third-party.windows/
 *.swp
 *.swo
 *.pdb

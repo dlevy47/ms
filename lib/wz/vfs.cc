@@ -1,6 +1,96 @@
 #include "wz/vfs.hh"
 
+#include <string_view>
+
 namespace wz {
+
+static const OpenedFile::Node* OpenedFile_Node_find(
+        const OpenedFile::Node* self,
+        const std::wstring_view& path) {
+    if (path.size() == 0)
+        return self;
+
+    if (self->children.count == 0)
+        return nullptr;
+
+    std::wstring_view this_path = path;
+    std::wstring_view next_path;
+
+    size_t next_slash = path.find(L'/');
+    if (next_slash != std::wstring_view::npos) {
+        this_path = path.substr(0, next_slash);
+        next_path = path.substr(next_slash + 1);
+    }
+
+    // Special case for ...
+    if (this_path == L"..") {
+        // Only the root node has no parent.
+        if (!self->parent)
+            return nullptr;
+
+        return OpenedFile_Node_find(
+                self->parent,
+                next_path);
+    }
+
+    for (uint32_t i = 0, l = self->children.count; i < l; ++i) {
+        if (this_path == self->children.start[i].name) {
+            return OpenedFile_Node_find(
+                    &self->children.start[i],
+                    next_path);
+        }
+    }
+
+    return nullptr;
+}
+
+const OpenedFile::Node* OpenedFile::Node::find(
+        const wchar_t* path) const {
+    return OpenedFile_Node_find(
+            this,
+            path);
+}
+
+Error OpenedFile::Node::childint32(
+        const wchar_t* n,
+        int32_t* x) const {
+    const OpenedFile::Node* child = find(n);
+    if (child == nullptr || child->kind != wz::Property::INT32) {
+        return error_new(Error::PROPERTYTYPEMISMATCH)
+            << "child node " << n << " is missing or not int32";
+    }
+
+    *x = child->int32;
+    return Error();
+}
+
+Error OpenedFile::Node::childvector(
+        const wchar_t* n,
+        int32_t* x,
+        int32_t* y) const {
+    const OpenedFile::Node* child = find(n);
+    if (child == nullptr || child->kind != wz::Property::VECTOR) {
+        return error_new(Error::PROPERTYTYPEMISMATCH)
+            << "child node " << n << " is missing or not vector";
+    }
+
+    *x = child->vector[0];
+    *y = child->vector[1];
+    return Error();
+}
+
+Error OpenedFile::Node::childstring(
+        const wchar_t* n,
+        const wchar_t** x) const {
+    const OpenedFile::Node* child = find(n);
+    if (child == nullptr || child->kind != wz::Property::STRING) {
+        return error_new(Error::PROPERTYTYPEMISMATCH)
+            << "child node " << n << " is missing or not string";
+    }
+
+    *x = child->string;
+    return Error();
+}
 
 struct Sizes {
     size_t strings;
@@ -67,7 +157,6 @@ static Error container_computesizes(
 }
 
 struct Cursor {
-	uint32_t* child;
 	uint32_t node;
 	wchar_t* string;
 	uint8_t* image;
@@ -88,6 +177,8 @@ static Error OpenedFile_open_property(
     cursor->string += p->name.len + 1;
 
     switch (p->kind) {
+        case wz::Property::VOID:
+            break;
         case wz::Property::STRING:
             {
                 CHECK(p->string.decrypt(cursor->string),
@@ -100,7 +191,7 @@ static Error OpenedFile_open_property(
                 CHECK(p->uol.decrypt(cursor->string),
                         Error::FILEOPENFAILED) << "failed to decrypt property string";
                 node.uol = cursor->string;
-                cursor->string += p->string.len + 1;
+                cursor->string += p->uol.len + 1;
             } break;
         case wz::Property::CANVAS:
             {
@@ -148,15 +239,16 @@ static Error OpenedFile_open_container(
         uint32_t this_index,
         const wz::File* f) {
     uint32_t children_start = cursor->node;
-    self->children.start = cursor->child;
+    self->children.start = &of->nodes[cursor->node + 1];  // + 1 because cursor->node points to self
     self->children.count = c.count;
+
+    // Here, iterate through the container's children twice: the first time, open properties, but
+    // don't descend into child containers. The second time, descend into child containers. This
+    // ensures that child spans are all contiguous.
 
     auto it1 = c.iterator(wz);
     while (it1) {
-        // Store this child index.
         ++cursor->node;
-        *(cursor->child) = cursor->node;
-        ++cursor->child;
 
         wz::Property p;
         CHECK(it1.next(&p),
@@ -164,7 +256,7 @@ static Error OpenedFile_open_container(
         CHECK(OpenedFile_open_property(
                     cursor, wz, of, &p, f),
                 Error::FILEOPENFAILED) << "failed to open child";
-        of->nodes[cursor->node].parent = this_index;
+        of->nodes[cursor->node].parent = self;
     }
 
     // Now, replay the children of this container, except this time descending into containers.
@@ -211,22 +303,112 @@ Error OpenedFile::open(
     CHECK(container_computesizes(wz, &sizes, f->root),
             Error::FILEOPENFAILED) << "failed to precompute sizes";
 
-    of->strings = new wchar_t[sizes.strings];
-    of->images = new uint8_t[sizes.images];
-    of->children = new uint32_t[sizes.children];
-    of->nodes = new OpenedFile::Node[sizes.nodes + 1]; // One extra for the root node.
+    of->strings.resize(sizes.strings, L'\0');
+    of->images.resize(sizes.images);
+    of->nodes.resize(sizes.nodes + 1);
 
     Cursor cursor = {
-        .child = of->children,
         .node = 0,
-        .string = of->strings,
-        .image = of->images,
+        .string = of->strings.data(),
+        .image = of->images.data(),
     };
     CHECK(OpenedFile_open_container(
-                &cursor, wz, of, of->nodes, f->root, 0, f),
+                &cursor, wz, of, &of->nodes[0], f->root, 0, f),
             Error::FILEOPENFAILED) << "failed to open file";
 
     return Error();
+}
+
+static Vfs::Node* Vfs_Node_find(
+        Vfs::Node* self,
+        const std::wstring_view& path) {
+    if (path.size() == 0)
+        return self;
+
+    if (self->kind == Vfs::Node::FILE)
+        return nullptr;
+
+    std::wstring_view this_path = path;
+    std::wstring_view next_path;
+
+    size_t next_slash = path.find(L'/');
+    if (next_slash != std::wstring_view::npos) {
+        this_path = path.substr(0, next_slash);
+        next_path = path.substr(next_slash + 1);
+    }
+
+    for (size_t i = 0, l = self->directory.size(); i < l; ++i) {
+        if (self->directory[i].name == this_path) {
+            return Vfs_Node_find(&self->directory[i], next_path);
+        }
+    }
+
+    return nullptr;
+}
+
+static Error Vfs_open_fromdirectory(
+        Vfs* vfs,
+        Vfs::Node* at,
+        const wz::Directory* dir) {
+    at->directory.resize(dir->children.count);
+
+    size_t i = 0;
+    auto it = dir->children.iterator(vfs->wz);
+    while (it) {
+        wz::Entry entry;
+        CHECK(it.next(&entry),
+                Error::BADREAD) << "failed to read directory entry";
+
+        Vfs::Node& child = at->directory[i];
+
+        switch (entry.kind) {
+            case wz::Entry::UNKNOWN:
+                break;
+            case wz::Entry::FILE:
+                {
+                    std::wstring name(entry.file.name.len, L'\0');
+                    CHECK(entry.file.name.decrypt(name.data()),
+                            Error::BADREAD) << "failed to decrypt file name";
+
+                    child.name = name;
+                    child.kind = Vfs::Node::FILE;
+                    child.file.wz = vfs->wz.get();
+                    child.file.file = entry.file.file;
+                } break;
+            case wz::Entry::SUBDIRECTORY:
+                {
+                    std::wstring name(entry.subdirectory.name.len, L'\0');
+                    CHECK(entry.subdirectory.name.decrypt(name.data()),
+                            Error::BADREAD) << "failed to decrypt subdirectory name";
+
+                    child.name = name;
+                    child.kind = Vfs::Node::DIRECTORY;
+
+                    CHECK(Vfs_open_fromdirectory(vfs, &child, &entry.subdirectory.directory),
+                            Error::OPENFAILED) << "failed to open directory " << name;
+                } break;
+        }
+
+        ++i;
+    }
+
+    return Error();
+}
+
+Error Vfs::open(
+        Vfs* vfs,
+        const wz::Wz* wz) {
+    vfs->wz = wz;
+    vfs->root.kind = Vfs::Node::DIRECTORY;
+
+    CHECK(Vfs_open_fromdirectory(vfs, &vfs->root, &vfs->wz->root),
+            Error::OPENFAILED) << "failed to open vfs";
+
+    return Error();
+}
+
+Vfs::Node* Vfs::find(const wchar_t* path) {
+    return Vfs_Node_find(&root, path);
 }
 
 };

@@ -11,7 +11,7 @@ namespace wz {
 struct Wz;
 
 struct Parser {
-    uint8_t* address;
+    const uint8_t* address;
     const Wz* wz;
 
     Error i8(int8_t* x) {return primitive(x, &address);}
@@ -35,7 +35,7 @@ struct Parser {
     template<typename T>
         Error primitive(
                 T* x,
-                uint8_t** address);
+                const uint8_t** address);
 };
 
 }

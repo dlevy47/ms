@@ -39,7 +39,7 @@ int _wz_closefile(
 }
 
 int _wz_mapfile(
-        void** addr_out,
+        const void** addr_out,
         int handle,
         size_t length) {
 	DWORD size_low = length & 0xFFFFFFFF;
@@ -70,7 +70,7 @@ int _wz_mapfile(
 }
 
 int _wz_unmapfile(
-        void* addr,
+        const void* addr,
         size_t length) {
 	if (UnmapViewOfFile(addr) == 0) {
 		return GetLastError();
