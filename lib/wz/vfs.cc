@@ -214,7 +214,7 @@ Error OpenedFile::open(
     of->strings = new wchar_t[sizes.strings];
     of->images = new uint8_t[sizes.images];
     of->children = new uint32_t[sizes.children];
-    of->nodes = new OpenedFile::Node[sizes.nodes];
+    of->nodes = new OpenedFile::Node[sizes.nodes + 1]; // One extra for the root node.
 
     Cursor cursor = {
         .child = of->children,
