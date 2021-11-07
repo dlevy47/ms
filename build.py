@@ -16,7 +16,33 @@ LIBS = [
         'shell32.lib',
         ]
 
-sources = []
+def compile(source, additional_includes=[]):
+    """Compile the c++ file source, manipulating the path name to generate a unique object name."""
+    object = 'build\\' + source.replace('\\', '-').replace(',', '-') + '.obj'
+    p = subprocess.run([
+        'cl.exe',
+        '/Fo' + object,
+        '/c',
+        '/std:c++20',
+        '/Z7',
+        '/EHsc',
+        '/Ilib\\',
+        '/Ithird-party\\'] + list('/I' + i for i in INCLUDES + additional_includes) + [
+        source])
+    return object
+
+def link(binary_name, objects):
+    p = subprocess.run([
+        'cl.exe',
+        '/Febuild\\' + binary_name + '.exe',
+        '/std:c++20',
+        '/fsanitize=address',
+        '/Z7',
+        '/EHsc'] + objects + [
+        '/link',
+        '/NODEFAULTLIB:MSVCRT'] + LIBS)
+
+lib_objects = []
 for dir in [
         'lib',
         'third-party',
@@ -27,41 +53,29 @@ for dir in [
                     (not file.endswith('.cc') or file.endswith('.posix.cc'))):
                 continue
 
-            sources.append(os.path.join(dirpath, file))
+            lib_objects.append(compile(os.path.join(dirpath, file)))
 
-objects = {}
-for source in sources:
-    objects[source] = 'build\\' + source.replace('\\', '-').replace('.', '-') + '.obj'
-    print(source, objects[source])
+for ent in os.scandir('bin'):
+    # At this level, each source file is considered a separate binary.
+    if ent.is_file() and ent.name.endswith('.cc'):
+        # First, compile this binary's object.
+        binary_object = compile(ent.path)
 
-for source, object in objects.items():
-    p = subprocess.run([
-        'cl.exe',
-        '/Fo' + object,
-        '/c',
-        '/std:c++20',
-        '/Z7',
-        '/EHsc',
-        '/Ilib\\',
-        '/Ithird-party\\'] + list('/I' + i for i in INCLUDES) + [
-        source])
+        # Then, link this binary.
+        base = re.sub(r'\.cc?$', '', ent.name)
+        link(base, [binary_object] + lib_objects)
+    elif ent.is_dir():
+        # Each directory is considered a separate binary.
+        binary_name = ent.name
 
-for dirpath, _, files in os.walk('bin'):
-    for file in files:
-        if ((not file.endswith('.c') or file.endswith('.posix.c')) and
-                (not file.endswith('.cc') or file.endswith('.posix.cc'))):
-            continue
+        additional_includes = [ent.path]
+        binary_objects = []
+        for dirpath, _, files in os.walk(ent.path):
+            for file in files:
+                if ((not file.endswith('.c') or file.endswith('.posix.c')) and
+                        (not file.endswith('.cc') or file.endswith('.posix.cc'))):
+                    continue
 
-        base = re.sub(r'\.cc?$', '', file)
-        p = subprocess.run([
-            'cl.exe',
-            '/Febuild\\' + base + '.exe',
-            '/std:c++20',
-            # '/fsanitize=address',
-            '/Z7',
-            '/EHsc',
-            '/Ilib\\',
-            '/Ithird-party\\'] + list('/I' + i for i in INCLUDES) + [
-            os.path.join(dirpath, file)] + list(objects.values()) + [
-            '/link',
-            '/NODEFAULTLIB:MSVCRT'] + LIBS)
+                binary_objects.append(compile(os.path.join(dirpath, file), additional_includes))
+
+        link(binary_name, binary_objects + lib_objects)

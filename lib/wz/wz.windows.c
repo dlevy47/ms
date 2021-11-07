@@ -1,5 +1,3 @@
-#include "wz/internal.h"
-
 #include <stdint.h>
 #include <windows.h>
 
