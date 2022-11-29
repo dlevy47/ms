@@ -11,11 +11,12 @@
 
 struct Logger {
     enum Level {
-        DEBUG,
-        INFO,
-        WARNING,
-        ERROR,
-        FATAL,
+        DEBUG = 0,
+        INFO = 1,
+        WARN = 2,
+        WARNING = 2,
+        ERROR = 3,
+        FATAL = 4,
     };
 
     struct Message {
@@ -61,6 +62,7 @@ struct Logger {
                     case Logger::INFO:
                         level_str = "INFO ";
                         break;
+                    // case Logger::WARN:
                     case Logger::WARNING:
                         level_str = "WARN ";
                         break;
@@ -108,4 +110,4 @@ struct Logger {
             __func__)
 
 #define LOG(level) \
-    LOG_TO(Logger::Global(), level)
+    LOG_TO(Logger::Global(), Logger::level)

@@ -12,10 +12,7 @@ struct Wz {
     wz::Wz wz;
     wz::Vfs vfs;
 
-    Wz():
-        wz(),
-        vfs() {}
-
+    Wz() = default;
     // Move and copy are prohibited because vfs contains a pointer to wz.
     Wz(Wz&&) = delete;
     Wz(const Wz&) = delete;
@@ -43,24 +40,7 @@ struct Dataset {
             Dataset* self,
             const std::filesystem::path& path);
 
-    Dataset():
-        base(),
-        character(),
-        effect(),
-        etc(),
-        item(),
-        map(),
-        mob(),
-        morph(),
-        npc(),
-        quest(),
-        reactor(),
-        skill(),
-        sound(),
-        string(),
-        taming_mob(),
-        ui() {}
-
+    Dataset() = default;
     Dataset(const Dataset&) = delete;
 };
 

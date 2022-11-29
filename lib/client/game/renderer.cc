@@ -8,6 +8,9 @@ namespace game {
 Error Renderer::Target::frame(
         const gfx::Sprite::Frame* frame,
         const gfx::Vector<int32_t> at) {
+    ++metrics.quads;
+    metrics.seen_textures[frame->texture] = std::monostate();
+
     // TODO: Instead of drawing each frame separately with its own call,
     // submit to a draw chain.
     that->program.projection(projection);
@@ -79,6 +82,8 @@ Error Renderer::Target::frame(
             6,
             that->drawable.ebo_type,
             nullptr);
+
+    ++metrics.draw_calls;
 
     return Error();
 }

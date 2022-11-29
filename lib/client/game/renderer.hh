@@ -1,5 +1,8 @@
 #pragma once
 
+#include <unordered_map>
+#include <variant>
+
 #include "gl.hh"
 #include "p.hh"
 #include "gl/window.hh"
@@ -21,6 +24,18 @@ namespace game {
 struct Renderer {
     struct Target {
         P<Renderer> that;
+
+        struct Metrics {
+            size_t draw_calls { 0 };
+            size_t quads { 0 };
+            std::unordered_map<GLuint, std::monostate> seen_textures;
+
+            size_t textures() const {
+                return seen_textures.size();
+            }
+        };
+
+        Metrics metrics;
 
         // target is the window frame to render to.
         // target is unowned because other things may render to the same frame

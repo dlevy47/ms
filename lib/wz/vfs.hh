@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 #include "p.hh"
@@ -210,7 +211,11 @@ struct OpenedFile {
     OpenedFile(const OpenedFile&) = delete;
 };
 
+// Vfs is a wrapper around a Wz that provides quicker, random-ish access to
+// the Files inside.
 struct Vfs {
+    struct Node;
+
     struct File {
         P<const wz::Wz> wz;
         wz::File file;
@@ -283,19 +288,37 @@ struct Vfs {
         File(const File&) = delete;
     };
 
-    struct Node {
-        enum Kind {
-            DIRECTORY,
-            FILE,
-        };
+    struct Directory {
+        std::unordered_map<std::wstring, Node> children;
 
+        Directory() = default;
+        Directory(Directory&&) = default;
+        Directory(const Directory&) = delete;
+    };
+
+    struct Node {
         P<Node> parent;
         std::wstring name;
-        Kind kind;
 
-        // directory and file are mutually exclusive, but are not in a union for c++ reasons.
-        std::vector<Node> directory;
-        File file;
+        std::variant<
+            Directory,
+            File> contents;
+
+        Directory* directory() {
+            return std::get_if<Directory>(&contents);
+        }
+
+        const Directory* directory() const {
+            return std::get_if<Directory>(&contents);
+        }
+
+        File* file() {
+            return std::get_if<File>(&contents);
+        }
+
+        const File* file() const {
+            return std::get_if<File>(&contents);
+        }
 
         Node() = default;
         Node(Node&&) = default;

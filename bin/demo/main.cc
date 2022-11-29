@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 #include <sstream>
 
@@ -111,6 +112,8 @@ Error main_(const std::vector<std::string>& args) {
         demo.map_viewport = (gfx::Rect<double>) starting_viewport;
     }
 
+    auto last_metrics = std::chrono::system_clock::now();
+
     while (!window.shouldclose()) {
         gfx::Vector<int> window_size;
         gfx::Vector<int> display_size;
@@ -210,6 +213,20 @@ Error main_(const std::vector<std::string>& args) {
                             demo.map_state.get(),
                             demo.universe.time.last),
                         Error::UIERROR) << "failed to render map";
+
+                {
+                    using namespace std::literals;
+
+                    if (std::chrono::system_clock::now() - last_metrics > 3s) {
+                        last_metrics = std::chrono::system_clock::now();
+
+                        LOG(DEBUG)
+                            << "[render stats] "
+                            << "quads: " << target.metrics.quads << " "
+                            << "textures: " << target.metrics.textures() << " "
+                            << "draw calls: " << target.metrics.draw_calls;
+                    }
+                }
             }
 
             demo.ui.input(

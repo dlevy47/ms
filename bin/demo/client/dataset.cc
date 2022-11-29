@@ -96,7 +96,7 @@ Error Dataset::opendirectory(
 
     for (size_t i = 0, l = sizeof(to_open) / sizeof(*to_open); i < l; ++i) {
         std::filesystem::path wz_path = path / to_open[i].basename;
-        LOG(Logger::INFO)
+        LOG(INFO)
             << "loading " << wz_path;
 
         std::string path_converted = convert(wz_path.c_str());

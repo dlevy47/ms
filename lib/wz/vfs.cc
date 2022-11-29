@@ -325,7 +325,8 @@ static Vfs::Node* Vfs_Node_find(
     if (path.size() == 0)
         return self;
 
-    if (self->kind == Vfs::Node::FILE)
+    Vfs::Directory* directory = self->directory();
+    if (directory == nullptr)
         return nullptr;
 
     std::wstring_view this_path = path;
@@ -337,10 +338,9 @@ static Vfs::Node* Vfs_Node_find(
         next_path = path.substr(next_slash + 1);
     }
 
-    for (size_t i = 0, l = self->directory.size(); i < l; ++i) {
-        if (self->directory[i].name == this_path) {
-            return Vfs_Node_find(&self->directory[i], next_path);
-        }
+    auto it = directory->children.find(this_path);
+    if (it != directory->children.end()) {
+        return Vfs_Node_find(&it->second, next_path);
     }
 
     return nullptr;
@@ -348,18 +348,14 @@ static Vfs::Node* Vfs_Node_find(
 
 static Error Vfs_open_fromdirectory(
         Vfs* vfs,
-        Vfs::Node* at,
+        Vfs::Directory* at,
         const wz::Directory* dir) {
-    at->directory.resize(dir->children.count);
-
     size_t i = 0;
     auto it = dir->children.iterator(vfs->wz);
     while (it) {
         wz::Entry entry;
         CHECK(it.next(&entry),
                 Error::BADREAD) << "failed to read directory entry";
-
-        Vfs::Node& child = at->directory[i];
 
         switch (entry.kind) {
             case wz::Entry::UNKNOWN:
@@ -370,10 +366,15 @@ static Error Vfs_open_fromdirectory(
                     CHECK(entry.file.name.decrypt(name.data()),
                             Error::BADREAD) << "failed to decrypt file name";
 
+                    Vfs::File file;
+                    file.wz = vfs->wz.get();
+                    file.file = entry.file.file;
+
+                    Vfs::Node child;
                     child.name = name;
-                    child.kind = Vfs::Node::FILE;
-                    child.file.wz = vfs->wz.get();
-                    child.file.file = entry.file.file;
+                    child.contents.emplace<1>(std::move(file));
+
+                    at->children.emplace(name, std::move(child));
                 } break;
             case wz::Entry::SUBDIRECTORY:
                 {
@@ -381,10 +382,13 @@ static Error Vfs_open_fromdirectory(
                     CHECK(entry.subdirectory.name.decrypt(name.data()),
                             Error::BADREAD) << "failed to decrypt subdirectory name";
 
+                    Vfs::Directory directory;
+                    Vfs::Node child;
                     child.name = name;
-                    child.kind = Vfs::Node::DIRECTORY;
+                    child.contents.emplace<0>(std::move(directory));
 
-                    CHECK(Vfs_open_fromdirectory(vfs, &child, &entry.subdirectory.directory),
+                    at->children.emplace(name, std::move(child));
+                    CHECK(Vfs_open_fromdirectory(vfs, at->children[name].directory(), &entry.subdirectory.directory),
                             Error::OPENFAILED) << "failed to open directory " << name;
                 } break;
         }
@@ -398,10 +402,12 @@ static Error Vfs_open_fromdirectory(
 Error Vfs::open(
         Vfs* vfs,
         const wz::Wz* wz) {
+    Vfs::Directory directory;
     vfs->wz = wz;
-    vfs->root.kind = Vfs::Node::DIRECTORY;
+    vfs->root.name = wz->header.ident;
+    vfs->root.contents.emplace<0>(std::move(directory));
 
-    CHECK(Vfs_open_fromdirectory(vfs, &vfs->root, &vfs->wz->root),
+    CHECK(Vfs_open_fromdirectory(vfs, vfs->root.directory(), &vfs->wz->root),
             Error::OPENFAILED) << "failed to open vfs";
 
     return Error();
