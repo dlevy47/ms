@@ -15,13 +15,13 @@ Error MapLoader::init(
     loader->universe = universe;
 
     wz::Vfs::Node* map_helper_node = dataset->map.vfs.find(L"MapHelper.img");
-    if (map_helper_node == nullptr || map_helper_node->kind != wz::Vfs::Node::FILE) {
+    if (map_helper_node == nullptr || map_helper_node->file() == nullptr) {
         return error_new(Error::UIERROR)
             << "failed to find MapHelper.img";
     }
 
     wz::Vfs::File::Handle map_helper_file;
-    CHECK(map_helper_node->file.open(&map_helper_file),
+    CHECK(map_helper_node->file()->open(&map_helper_file),
             Error::OPENFAILED) << "failed to open MapHelper.img";
     LOG(Logger::INFO)
         << "loaded MapHelper.img";
@@ -48,14 +48,14 @@ Error MapLoader::load(
 
     // Extract the file.
     wz::Vfs::Node* map_node = dataset->map.vfs.find(map_filename.c_str());
-    if (map_node == nullptr || map_node->kind != wz::Vfs::Node::FILE) {
+    if (map_node == nullptr || map_node->file() == nullptr) {
         return error_new(Error::UIERROR)
             << "failed to find map file " << map_filename;
     }
 
     // Open the file.
     wz::Vfs::File::Handle map_file;
-    CHECK(map_node->file.open(&map_file),
+    CHECK(map_node->file()->open(&map_file),
             Error::OPENFAILED) << "failed to open map file";
     LOG(Logger::INFO)
         << "loaded map file";

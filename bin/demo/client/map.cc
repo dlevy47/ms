@@ -145,12 +145,12 @@ static Error TileSet_load(
 
         tileset_file_node = map_vfs->find(tileset_file_node_name.c_str());
     }
-    if (tileset_file_node == nullptr || tileset_file_node->kind != wz::Vfs::Node::FILE) {
+    if (tileset_file_node == nullptr || tileset_file_node->file() == nullptr) {
         return error_new(Error::TILESET_LOAD_MISSINGFILE)
             << "missing or invalid tileset file: " << tileset_file_node_name;
     }
 
-    CHECK(tileset_file_node->file.open(&tileset->tileset_file),
+    CHECK(tileset_file_node->file()->open(&tileset->tileset_file),
             Error::OPENFAILED) << "failed to open tileset file";
 
     auto group_it = tileset->tileset_file->iterator();
@@ -235,12 +235,12 @@ static Error ObjectSet_load(
 
         objectset_file_node = map_vfs->find(objectset_file_node_name.c_str());
     }
-    if (objectset_file_node == nullptr || objectset_file_node->kind != wz::Vfs::Node::FILE) {
+    if (objectset_file_node == nullptr || objectset_file_node->file() == nullptr) {
         return error_new(Error::OBJECTSET_LOAD_MISSINGFILE)
             << "missing or invalid objectset file: " << objectset_file_node_name;
     }
 
-    CHECK(objectset_file_node->file.open(&objectset->objectset_file),
+    CHECK(objectset_file_node->file()->open(&objectset->objectset_file),
             Error::OPENFAILED) << "failed to open objectset file";
 
     auto l0_it = objectset->objectset_file->iterator();
@@ -513,13 +513,13 @@ static Error Map_load_background(
 
         back_file_node = map_vfs->find(back_file_node_name.c_str());
     }
-    if (back_file_node == nullptr || back_file_node->kind != wz::Vfs::Node::FILE) {
+    if (back_file_node == nullptr || back_file_node->file() == nullptr) {
         return error_new(Error::BACKGROUND_LOAD_MISSINGFILE)
             << "missing or invalid background file: " << back_file_node_name;
     }
 
     // Open the background file.
-    CHECK(back_file_node->file.open(&background->background_file),
+    CHECK(back_file_node->file()->open(&background->background_file),
             Error::OPENFAILED) << "failed to open back file";
 
     // Load the background frame.

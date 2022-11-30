@@ -71,13 +71,13 @@ Error Demo::init(
             Error::OPENFAILED) << "failed to load dataset";
 
     wz::Vfs::Node* map_node = self->dataset.string.vfs.find(L"Map.img");
-    if (map_node == nullptr || map_node->kind != wz::Vfs::Node::FILE) {
+    if (map_node == nullptr || map_node->file() == nullptr) {
         return error_new(Error::NOTFOUND)
             << "failed to find Map.img";
     }
 
     wz::Vfs::File::Handle map_file;
-    CHECK(map_node->file.open(&map_file),
+    CHECK(map_node->file()->open(&map_file),
             Error::OPENFAILED) << "failed to open Map.img";
     LOG(Logger::INFO)
         << "loaded Strings/Map.img";
@@ -124,14 +124,14 @@ Error Demo::load_map(
 
     // Extract the file.
     wz::Vfs::Node* map_node = dataset.map.vfs.find(map_filename.c_str());
-    if (map_node == nullptr || map_node->kind != wz::Vfs::Node::FILE) {
+    if (map_node == nullptr || map_node->file() == nullptr) {
         return error_new(Error::UIERROR)
             << "failed to find map file";
     }
 
     // Open the file.
     wz::Vfs::File::Handle map_file;
-    CHECK(map_node->file.open(&map_file),
+    CHECK(map_node->file()->open(&map_file),
             Error::OPENFAILED) << "failed to open map file";
     LOG(Logger::INFO)
         << "loaded map file";

@@ -147,55 +147,50 @@ static void Browser_ui_fromvfsnode(
                 reinterpret_cast<const char*>(name_stack.c_str()),
                 name_stack.size() * sizeof(wchar_t),
                 0)) {
-        switch (node->kind) {
-            case wz::Vfs::Node::DIRECTORY:
-                {
-                    std::vector<wz::Vfs::Node*> children;
+        if (wz::Vfs::Directory* directory = node->directory()) {
+            std::vector<wz::Vfs::Node*> children;
 
-                    for (size_t i = 0, l = node->directory.size(); i < l; ++i) {
-                        children.push_back(&node->directory[i]);
+            for (auto& it : directory->children) {
+                children.push_back(&it.second);
+            }
+
+            std::sort(
+                    children.begin(),
+                    children.end(),
+                    [](wz::Vfs::Node*& left, wz::Vfs::Node*& right) {
+                    return left->name < right->name;
+                    });
+
+            for (size_t i = 0, l = children.size(); i < l; ++i) {
+                Browser_ui_fromvfsnode(self, children[i], name_stack);
+            }
+        } else if (wz::Vfs::File* file = node->file()) {
+            if (file->rc) {
+                nk_layout_row_dynamic(self->ui.context, 0, 2); {
+                    nk_label(self->ui.context, "Opened File", NK_TEXT_LEFT);
+
+                    if (nk_button_label(self->ui.context, "Close")) {
+                        file->close();
                     }
+                }
+            } else {
+                nk_layout_row_dynamic(self->ui.context, 0, 2); {
+                    nk_label(self->ui.context, "Unopened File", NK_TEXT_LEFT);
 
-                    std::sort(
-                            children.begin(),
-                            children.end(),
-                            [](wz::Vfs::Node*& left, wz::Vfs::Node*& right) {
-                            return left->name < right->name;
-                            });
-
-                    for (size_t i = 0, l = children.size(); i < l; ++i) {
-                        Browser_ui_fromvfsnode(self, children[i], name_stack);
-                    }
-                } break;
-            case wz::Vfs::Node::FILE:
-                {
-                    if (node->file.rc) {
-                        nk_layout_row_dynamic(self->ui.context, 0, 2); {
-                            nk_label(self->ui.context, "Opened File", NK_TEXT_LEFT);
-
-                            if (nk_button_label(self->ui.context, "Close")) {
-                                node->file.close();
-                            }
-                        }
-                    } else {
-                        nk_layout_row_dynamic(self->ui.context, 0, 2); {
-                            nk_label(self->ui.context, "Unopened File", NK_TEXT_LEFT);
-
-                            if (nk_button_label(self->ui.context, "Open")) {
-                                Error e = node->file.open(nullptr);
-                                if (e) {
-                                    std::cerr << "failed to open file: ";
-                                    e.print(std::wcerr);
-                                    std::cerr << "\n";
-                                }
-                            }
+                    if (nk_button_label(self->ui.context, "Open")) {
+                        Error e = file->open(nullptr);
+                        if (e) {
+                            std::cerr << "failed to open file: ";
+                            e.print(std::wcerr);
+                            std::cerr << "\n";
                         }
                     }
+                }
+            }
 
-                    if (node->file.rc) {
-                        Browser_ui_fromfilenode(self, node->file.opened.get(), &node->file.opened->nodes[0], name_stack + L"-properties");
-                    }
-                } break;
+            if (file->rc) {
+                Browser_ui_fromfilenode(self, file->opened.get(), &file->opened->nodes[0], name_stack + L"-properties");
+            }
         }
 
         nk_tree_pop(self->ui.context);

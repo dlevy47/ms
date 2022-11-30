@@ -289,7 +289,16 @@ struct Vfs {
     };
 
     struct Directory {
-        std::unordered_map<std::wstring, Node> children;
+        struct Hash
+        {
+            using hash_type = std::hash<std::wstring_view>;
+            using is_transparent = void;
+
+            std::size_t operator()(const wchar_t* str) const { return hash_type{}(str); }
+            std::size_t operator()(std::wstring_view str) const { return hash_type{}(str); }
+            std::size_t operator()(std::wstring const& str) const { return hash_type{}(str); }
+        };
+        std::unordered_map<std::wstring, Node, Hash, std::equal_to<>> children;
 
         Directory() = default;
         Directory(Directory&&) = default;
