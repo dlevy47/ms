@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -253,6 +254,7 @@ struct Vfs {
                     file->close();
             }
 
+            Handle& operator=(Handle&) = delete;
             Handle& operator=(Handle&& rhs) = default;
             Handle() = default;
             Handle(Handle&&) = default;
@@ -260,23 +262,25 @@ struct Vfs {
         };
 
         Error open(Handle* h) {
+            if (!h) {
+                throw "handle cannot be null";
+            }
+
             if (rc == (uint32_t) 0) {
                 opened.reset(new OpenedFile());
                 CHECK(OpenedFile::open(wz, opened.get(), &file),
                         Error::OPENFAILED) << "failed to open file";
             }
 
-            if (h) {
-                h->file = this;
-                h->opened_file = opened.get();
-            }
+            h->file = this;
+            h->opened_file = opened.get();
             ++rc;
             return Error();
         }
 
         void close() {
             if (rc == (uint32_t) 0)
-                return;
+                throw "double closed file";
 
             --rc;
             if (rc == (uint32_t) 0)

@@ -141,7 +141,7 @@ Error Demo::load_map(
     CHECK(ms::Map::load(
                 &map,
                 map_id,
-                map_file.clone()),
+                std::move(map_file)),
             Error::OPENFAILED) << "failed to load logical map";
     LOG(Logger::INFO) << "logical map loaded";
 

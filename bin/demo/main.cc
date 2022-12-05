@@ -18,11 +18,16 @@
 #include "wz/vfs.hh"
 #include "gl.hh"
 
+#include "oui-blendish/blendish.h"
+
 #include "demo.hh"
 
 enum {
     MAPID_LENGTH = 9,
 };
+
+static void draw_blendish() {
+}
 
 static void glfw_errorcallback(int code, const char* message) {
     LOG(Logger::ERROR) <<
@@ -225,6 +230,12 @@ Error main_(const std::vector<std::string>& args) {
                             << "quads: " << target.metrics.quads << " "
                             << "textures: " << target.metrics.textures() << " "
                             << "draw calls: " << target.metrics.draw_calls;
+
+                        auto open_files = demo.dataset.openfiles();
+                        std::wcerr << "open files: \n";
+                        for (const auto& name : open_files) {
+                            std::wcerr << "  " << name << "\n";
+                        }
                     }
                 }
             }
@@ -241,6 +252,10 @@ Error main_(const std::vector<std::string>& args) {
                     &frame,
                     window_size,
                     &demo.ui);
+        }
+
+        {
+            draw_blendish();
         }
 
         mouse.screen.last = mouse.screen.now;

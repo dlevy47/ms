@@ -36,7 +36,7 @@ struct Window {
     // and a boolean indicating whether a new value is available.
     struct {
         gfx::Vector<double> value;
-        bool available;
+        bool available { false };
     } scroll;
 
     struct Keypress {

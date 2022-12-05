@@ -1,6 +1,8 @@
 #pragma once
 
 #include <filesystem>
+#include <string>
+#include <vector>
 
 #include "util/error.hh"
 #include "wz/vfs.hh"
@@ -39,6 +41,8 @@ struct Dataset {
     static Error opendirectory(
             Dataset* self,
             const std::filesystem::path& path);
+
+    std::vector<std::wstring> openfiles() const;
 
     Dataset() = default;
     Dataset(const Dataset&) = delete;

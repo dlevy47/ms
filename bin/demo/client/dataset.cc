@@ -113,4 +113,106 @@ Error Dataset::opendirectory(
     return Error();
 }
 
+static void openfiles(
+        std::vector<std::wstring>* names,
+        std::wstring prefix,
+        const wz::Vfs::Directory* dir) {
+    for (const auto& it : dir->children) {
+        const wz::Vfs::Node* child = &it.second;
+        if (const wz::Vfs::File* file = child->file()) {
+            if (file->rc) {
+                names->push_back(prefix + L"/" + it.first);
+            }
+        } else if (const wz::Vfs::Directory* directory = child->directory()) {
+            openfiles(
+                    names,
+                    prefix + L"/" + it.first,
+                    directory);
+        }
+    }
+}
+
+std::vector<std::wstring> Dataset::openfiles() const {
+    struct ToOpen {
+        const Wz* into;
+        const wchar_t* basename;
+    };
+    const ToOpen to_open[] = {
+        {
+            .into = &base,
+            .basename = L"Base.wz",
+        },
+        {
+            .into = &character,
+            .basename = L"Character.wz",
+        },
+        {
+            .into = &effect,
+            .basename = L"Effect.wz",
+        },
+        {
+            .into = &etc,
+            .basename = L"Etc.wz",
+        },
+        {
+            .into = &item,
+            .basename = L"Item.wz",
+        },
+        {
+            .into = &map,
+            .basename = L"Map.wz",
+        },
+        {
+            .into = &mob,
+            .basename = L"Mob.wz",
+        },
+        {
+            .into = &morph,
+            .basename = L"Morph.wz",
+        },
+        {
+            .into = &npc,
+            .basename = L"Npc.wz",
+        },
+        {
+            .into = &quest,
+            .basename = L"Quest.wz",
+        },
+        {
+            .into = &reactor,
+            .basename = L"Reactor.wz",
+        },
+        {
+            .into = &skill,
+            .basename = L"Skill.wz",
+        },
+        {
+            .into = &sound,
+            .basename = L"Sound.wz",
+        },
+        {
+            .into = &string,
+            .basename = L"String.wz",
+        },
+        {
+            .into = &taming_mob,
+            .basename = L"TamingMob.wz",
+        },
+        {
+            .into = &ui,
+            .basename = L"UI.wz",
+        },
+    };
+
+    std::vector<std::wstring> names;
+    for (size_t i = 0; i < sizeof(to_open) / sizeof(*to_open); ++i) {
+        ::client::openfiles(
+                &names,
+                to_open[i].basename,
+                to_open[i].into->vfs.root.directory());
+    }
+
+    return names;
+}
+
 }
