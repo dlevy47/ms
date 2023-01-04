@@ -165,7 +165,8 @@ static Error TileSet_load(
 
         const wz::OpenedFile::Node* number = nullptr;
         while ((number = number_it.next())) {
-            if (number->kind != wz::Property::CANVAS) {
+            const auto* canvas = number->canvas();
+            if (canvas == nullptr) {
                 if (results) {
                     std::wstringstream key_ss;
                     key_ss << tileset_name_s << "/" << u << "/" << number->name;
@@ -195,8 +196,8 @@ static Error TileSet_load(
             // Load the frame.
             CHECK(gfx::Sprite::Frame::load(
                         &tile.frame,
-                        number->canvas.image,
-                        number->canvas.image_data),
+                        canvas->image,
+                        canvas->image_data),
                     Error::TILESET_LOAD_FRAMELOADFAILED) << "failed to load tile frame";
 
             CHECK(number->childvector(
@@ -296,10 +297,14 @@ static Error Map_load_layer(
     do {
         const wz::OpenedFile::Node* tileset_name_node =
             layer_node->find(L"info/tS");
-        if (tileset_name_node == nullptr || tileset_name_node->kind != wz::Property::STRING)
+        if (tileset_name_node == nullptr)
             break;
 
-        const wchar_t* tileset_name_s = tileset_name_node->string;
+        const auto* string = tileset_name_node->string();
+        if (string == nullptr)
+            break;
+
+        const wchar_t* tileset_name_s = string->string;
 
         // Load the named tileset, if we haven't already.
         const std::wstring tileset_name(tileset_name_s);
@@ -540,15 +545,21 @@ static Error Map_load_background(
     }
 
     const wz::OpenedFile::Node* frame_node = background->background_file->find(frame_node_name.c_str());
-    if (frame_node == nullptr || frame_node->kind != wz::Property::CANVAS) {
+    if (frame_node == nullptr) {
+        return error_new(Error::BACKGROUND_LOAD_MISSINGFRAME)
+            << "missing or invalid frame";
+    }
+
+    const auto* canvas = frame_node->canvas();
+    if (canvas == nullptr) {
         return error_new(Error::BACKGROUND_LOAD_MISSINGFRAME)
             << "missing or invalid frame";
     }
 
     CHECK(gfx::Sprite::Frame::load(
                 &background->frame,
-                frame_node->canvas.image,
-                frame_node->canvas.image_data),
+                canvas->image,
+                canvas->image_data),
             Error::BACKGROUND_LOAD_FRAMELOADFAILED) << "failed to load frame";
 
     CHECK(frame_node->childvector(

@@ -151,38 +151,34 @@ struct Canvas {
             const uint8_t* file_base);
 };
 
-struct Property {
-    enum Kind {
-        VOID,
-        UINT16,
-        INT32,
-        FLOAT32,
-        FLOAT64,
-        STRING,
-        CONTAINER,
-        NAMEDCONTAINER,
-        CANVAS,
-        VECTOR,
-        SOUND,
-        UOL,
-    };
+struct Vector {
+    int32_t x;
+    int32_t y;
+};
 
-    Kind kind;
+struct Uol {
+    String uol;
+};
+
+struct Void {
+};
+
+struct Property {
     String name;
 
-    union {
-        uint16_t               uint16;
-        int32_t                int32;
-        float                  float32;
-        double                 float64;
-        String                 string;
-        PropertyContainer      container;
-        NamedPropertyContainer named_container;
-        Canvas                 canvas;
-        int32_t                vector[2];
-        const uint8_t*         sound;
-        String                 uol;
-    };
+    std::variant<
+        Void,
+        uint16_t,
+        int32_t,
+        float,
+        double,
+        String,
+        PropertyContainer,
+        NamedPropertyContainer,
+        Canvas,
+        Vector,
+        const uint8_t*,
+        Uol> property;
 
     static Error parse(
             Property* x,

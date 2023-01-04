@@ -55,12 +55,18 @@ Error OpenedFile::Node::childint32(
         const wchar_t* n,
         int32_t* x) const {
     const OpenedFile::Node* child = find(n);
-    if (child == nullptr || child->kind != wz::Property::INT32) {
+    if (!child) {
         return error_new(Error::PROPERTYTYPEMISMATCH)
-            << "child node " << n << " is missing or not int32";
+            << "child node " << n << " does not exist";
     }
 
-    *x = child->int32;
+    if (const int32_t* ip = std::get_if<int32_t>(&child->value)) {
+        *x = *ip;
+    } else {
+        return error_new(Error::PROPERTYTYPEMISMATCH)
+            << "child node " << n << " is not int32";
+    }
+
     return Error();
 }
 
@@ -69,13 +75,19 @@ Error OpenedFile::Node::childvector(
         int32_t* x,
         int32_t* y) const {
     const OpenedFile::Node* child = find(n);
-    if (child == nullptr || child->kind != wz::Property::VECTOR) {
+    if (!child) {
         return error_new(Error::PROPERTYTYPEMISMATCH)
-            << "child node " << n << " is missing or not vector";
+            << "child node " << n << " does not exist";
     }
 
-    *x = child->vector[0];
-    *y = child->vector[1];
+    if (const Vector* v = std::get_if<Vector>(&child->value)) {
+        *x = v->x;
+        *y = v->y;
+    } else {
+        return error_new(Error::PROPERTYTYPEMISMATCH)
+            << "child node " << n << " is not vector";
+    }
+
     return Error();
 }
 
@@ -83,12 +95,18 @@ Error OpenedFile::Node::childstring(
         const wchar_t* n,
         const wchar_t** x) const {
     const OpenedFile::Node* child = find(n);
-    if (child == nullptr || child->kind != wz::Property::STRING) {
+    if (!child) {
         return error_new(Error::PROPERTYTYPEMISMATCH)
-            << "child node " << n << " is missing or not string";
+            << "child node " << n << " does not exist";
     }
 
-    *x = child->string;
+    if (const String* s = std::get_if<String>(&child->value)) {
+        *x = s->string;
+    } else {
+        return error_new(Error::PROPERTYTYPEMISMATCH)
+            << "child node " << n << " is not string";
+    }
+
     return Error();
 }
 
@@ -116,39 +134,34 @@ static Error container_computesizes(
         // Extra byte for null terminator.
         sizes->strings += p.name.len + 1;
 
-        switch (p.kind) {
-            case wz::Property::VOID:
-            case wz::Property::UINT16:
-            case wz::Property::INT32:
-            case wz::Property::FLOAT32:
-            case wz::Property::FLOAT64:
-            case wz::Property::VECTOR:
-            case wz::Property::SOUND:
-                break;
-            case wz::Property::STRING:
-                sizes->strings += p.string.len + 1;
-                break;
-            case wz::Property::UOL:
-                sizes->strings += p.uol.len + 1;
-                break;
-            case wz::Property::CANVAS:
+        switch (p.property.index()) {
+            case 5:
                 {
-                    sizes->images += p.canvas.image.rawsize();
-                    CHECK(container_computesizes(wz, sizes, p.canvas.children),
-                            Error::FILEOPENFAILED) << "failed to compute canvas child sizes";
-                    ++sizes->nodes;
+                    sizes->strings += std::get_if<5>(&p.property)->len + 1;
                 } break;
-            case wz::Property::CONTAINER:
+            case 6:
                 {
-                    CHECK(container_computesizes(wz, sizes, p.container),
+                    CHECK(container_computesizes(wz, sizes, *std::get_if<6>(&p.property)),
                             Error::FILEOPENFAILED) << "failed to compute container sizes";
                     ++sizes->nodes;
                 } break;
-            case wz::Property::NAMEDCONTAINER:
+            case 7:
                 {
-                    CHECK(container_computesizes(wz, sizes, p.named_container),
+                    CHECK(container_computesizes(wz, sizes, *std::get_if<7>(&p.property)),
                             Error::FILEOPENFAILED) << "failed to compute named container sizes";
                     ++sizes->nodes;
+                } break;
+            case 8:
+                {
+                    const Canvas* c = std::get_if<8>(&p.property);
+                    sizes->images += c->image.rawsize();
+                    CHECK(container_computesizes(wz, sizes, c->children),
+                            Error::FILEOPENFAILED) << "failed to compute canvas child sizes";
+                    ++sizes->nodes;
+                } break;
+            case 11:
+                {
+                    sizes->strings += std::get_if<11>(&p.property)->uol.len + 1;
                 } break;
         }
     }
@@ -169,60 +182,73 @@ static Error OpenedFile_open_property(
         const wz::Property* p,
         const wz::File* f) {
     OpenedFile::Node& node = of->nodes[cursor->node];
-    node.kind = p->kind;
 
     CHECK(p->name.decrypt(cursor->string),
             Error::FILEOPENFAILED) << "failed to decrypt property name";
     node.name = cursor->string;
     cursor->string += p->name.len + 1;
 
-    switch (p->kind) {
-        case wz::Property::VOID:
+    switch (p->property.index()) {
+        case 0:
+            node.value = Void{};
             break;
-        case wz::Property::STRING:
+        case 1:
+            node.value = *std::get_if<1>(&p->property);
+            break;
+        case 2:
+            node.value = *std::get_if<2>(&p->property);
+            break;
+        case 3:
+            node.value = *std::get_if<3>(&p->property);
+            break;
+        case 4:
+            node.value = *std::get_if<4>(&p->property);
+            break;
+        case 9:
+            node.value = *std::get_if<9>(&p->property);
+            break;
+        case 5:
             {
-                CHECK(p->string.decrypt(cursor->string),
+                const wz::String* string = std::get_if<5>(&p->property);
+                CHECK(string->decrypt(cursor->string),
                         Error::FILEOPENFAILED) << "failed to decrypt property string";
-                node.string = cursor->string;
-                cursor->string += p->string.len + 1;
+                node.value = wz::OpenedFile::String {
+                    cursor->string,
+                };
+
+                cursor->string += string->len + 1;
             } break;
-        case wz::Property::UOL:
+        case 8:
             {
-                CHECK(p->uol.decrypt(cursor->string),
-                        Error::FILEOPENFAILED) << "failed to decrypt property string";
-                node.uol = cursor->string;
-                cursor->string += p->uol.len + 1;
-            } break;
-        case wz::Property::CANVAS:
-            {
-                CHECK(p->canvas.image.pixels(cursor->image),
+                const wz::Canvas* canvas = std::get_if<8>(&p->property);
+                CHECK(canvas->image.pixels(cursor->image),
                         Error::FILEOPENFAILED) << "failed to retrieve image pixels of property ";
-                node.canvas.image = p->canvas.image;
-                node.canvas.image_data = cursor->image;
-                cursor->image += p->canvas.image.rawsize();
+
+                wz::OpenedFile::Canvas node_canvas;
+                node_canvas.image = canvas->image;
+                node_canvas.image_data = cursor->image;
+                node.value = node_canvas;
+
+                cursor->image += canvas->image.rawsize();
             } break;
-        case wz::Property::UINT16:
-            node.uint16 = p->uint16;
+        case 11:
+            {
+                const wz::Uol* uol = std::get_if<11>(&p->property);
+                CHECK(uol->uol.decrypt(cursor->string),
+                        Error::FILEOPENFAILED) << "failed to decrypt property string";
+                node.value = wz::OpenedFile::Uol {
+                    cursor->string,
+                };
+
+                cursor->string += uol->uol.len + 1;
+            } break;
+        case 10:
+            // TODO: Sound
             break;
-        case wz::Property::INT32:
-            node.int32 = p->int32;
-            break;
-        case wz::Property::FLOAT32:
-            node.float32 = p->float32;
-            break;
-        case wz::Property::FLOAT64:
-            node.float64 = p->float64;
-            break;
-        case wz::Property::VECTOR:
-            node.vector[0] = p->vector[0];
-            node.vector[1] = p->vector[1];
-            break;
-        case wz::Property::SOUND:
-            // TODO
-            break;
-        case wz::Property::CONTAINER:
-        case wz::Property::NAMEDCONTAINER:
-            // These are handled elsewhere.
+        case 6:
+        case 7:
+            // PropertyContainer and NamedPropertyContainer are handled
+            // elsewhere.
             break;
     }
 
@@ -268,27 +294,18 @@ static Error OpenedFile_open_container(
         CHECK(it2.next(&p),
                 Error::FILEOPENFAILED) << "failed to parse child";
 
-        switch (p.kind) {
-            case wz::Property::CANVAS:
-                {
-                    CHECK(OpenedFile_open_container(
-                                cursor, wz, of, &of->nodes[children_start], p.canvas.children, children_start, f),
-                            Error::FILEOPENFAILED) << "failed to open canvas container";
-                } break;
-            case wz::Property::CONTAINER:
-                {
-                    CHECK(OpenedFile_open_container(
-                                cursor, wz, of, &of->nodes[children_start], p.container, children_start, f),
-                            Error::FILEOPENFAILED) << "failed to open container";
-                } break;
-            case wz::Property::NAMEDCONTAINER:
-                {
-                    CHECK(OpenedFile_open_container(
-                                cursor, wz, of, &of->nodes[children_start], p.named_container, children_start, f),
-                            Error::FILEOPENFAILED) << "failed to open named container";
-                } break;
-            default:
-                break;
+        if (const wz::Canvas* canvas = std::get_if<wz::Canvas>(&p.property)) {
+            CHECK(OpenedFile_open_container(
+                        cursor, wz, of, &of->nodes[children_start], canvas->children, children_start, f),
+                    Error::FILEOPENFAILED) << "failed to open canvas container";
+        } else if (const wz::PropertyContainer* container = std::get_if<wz::PropertyContainer>(&p.property)) {
+            CHECK(OpenedFile_open_container(
+                        cursor, wz, of, &of->nodes[children_start], *container, children_start, f),
+                    Error::FILEOPENFAILED) << "failed to open container";
+        } else if (const wz::NamedPropertyContainer* container = std::get_if<wz::NamedPropertyContainer>(&p.property)) {
+            CHECK(OpenedFile_open_container(
+                        cursor, wz, of, &of->nodes[children_start], *container, children_start, f),
+                    Error::FILEOPENFAILED) << "failed to open named container";
         }
     }
 
@@ -357,40 +374,33 @@ static Error Vfs_open_fromdirectory(
         CHECK(it.next(&entry),
                 Error::BADREAD) << "failed to read directory entry";
 
-        switch (entry.kind) {
-            case wz::Entry::UNKNOWN:
-                break;
-            case wz::Entry::FILE:
-                {
-                    std::wstring name(entry.file.name.len, L'\0');
-                    CHECK(entry.file.name.decrypt(name.data()),
-                            Error::BADREAD) << "failed to decrypt file name";
+        if (auto entry_file = std::get_if<wz::Entry::File>(&entry.entry)) {
+            std::wstring name(entry_file->name.len, L'\0');
+            CHECK(entry_file->name.decrypt(name.data()),
+                    Error::BADREAD) << "failed to decrypt file name";
 
-                    Vfs::File file;
-                    file.wz = vfs->wz.get();
-                    file.file = entry.file.file;
+            Vfs::File file;
+            file.wz = vfs->wz.get();
+            file.file = entry_file->file;
 
-                    Vfs::Node child;
-                    child.name = name;
-                    child.contents.emplace<1>(std::move(file));
+            Vfs::Node child;
+            child.name = name;
+            child.contents.emplace<1>(std::move(file));
 
-                    at->children.emplace(name, std::move(child));
-                } break;
-            case wz::Entry::SUBDIRECTORY:
-                {
-                    std::wstring name(entry.subdirectory.name.len, L'\0');
-                    CHECK(entry.subdirectory.name.decrypt(name.data()),
-                            Error::BADREAD) << "failed to decrypt subdirectory name";
+            at->children.emplace(name, std::move(child));
+        } else if (auto entry_directory = std::get_if<wz::Entry::Directory>(&entry.entry)) {
+            std::wstring name(entry_directory->name.len, L'\0');
+            CHECK(entry_directory->name.decrypt(name.data()),
+                    Error::BADREAD) << "failed to decrypt subdirectory name";
 
-                    Vfs::Directory directory;
-                    Vfs::Node child;
-                    child.name = name;
-                    child.contents.emplace<0>(std::move(directory));
+            Vfs::Directory directory;
+            Vfs::Node child;
+            child.name = name;
+            child.contents.emplace<0>(std::move(directory));
 
-                    at->children.emplace(name, std::move(child));
-                    CHECK(Vfs_open_fromdirectory(vfs, at->children[name].directory(), &entry.subdirectory.directory),
-                            Error::OPENFAILED) << "failed to open directory " << name;
-                } break;
+            at->children.emplace(name, std::move(child));
+            CHECK(Vfs_open_fromdirectory(vfs, at->children[name].directory(), &entry_directory->directory),
+                    Error::OPENFAILED) << "failed to open directory " << name;
         }
 
         ++i;
@@ -399,12 +409,13 @@ static Error Vfs_open_fromdirectory(
     return Error();
 }
 
-Error Vfs::open(
+Error Vfs::opennamed(
         Vfs* vfs,
-        const wz::Wz* wz) {
+        const wz::Wz* wz,
+        std::wstring&& name) {
     Vfs::Directory directory;
     vfs->wz = wz;
-    vfs->root.name = wz->header.ident;
+    vfs->root.name = std::move(name);
     vfs->root.contents.emplace<0>(std::move(directory));
 
     CHECK(Vfs_open_fromdirectory(vfs, vfs->root.directory(), &vfs->wz->root),

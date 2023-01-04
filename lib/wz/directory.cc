@@ -64,14 +64,9 @@ Error Entry::parse(
 
     switch (kind) {
         case 1:
-            e->kind = Entry::UNKNOWN;
-            break;
         case 2:
         case 4:
-            e->kind = Entry::FILE;
-            break;
         case 3:
-            e->kind = Entry::SUBDIRECTORY;
             break;
         default:
             return error_new(Error::UNKNOWNDIRECTORYENTRYKIND)
@@ -80,13 +75,16 @@ Error Entry::parse(
 
     String name;
     if (kind == 1) {
-        CHECK(p->u32(&e->unknown.unknown1),
+        Unknown unknown;
+
+        CHECK(p->u32(&unknown.unknown1),
                 Error::BADREAD) << "failed to read unknown entry unknown1";
-        CHECK(p->u16(&e->unknown.unknown2),
+        CHECK(p->u16(&unknown.unknown2),
                 Error::BADREAD) << "failed to read unknown entry unknown2";
-        CHECK(p->offset(&e->unknown.offset),
+        CHECK(p->offset(&unknown.offset),
                 Error::BADREAD) << "failed to read unknown entry offset";
 
+        e->entry = std::move(unknown);
         return Error();
     } else if (kind == 2) {
         // Kind 2 files have the names and modified kinds at an offset.
@@ -112,35 +110,36 @@ Error Entry::parse(
     // We have another check here because the kind may have changed
     // above.
     if (kind == 3) {
-        e->kind = Entry::SUBDIRECTORY;
-        e->subdirectory.name = name;
+        Directory directory;
+        directory.name = std::move(name);
 
         int32_t size = 0;
         CHECK(p->i32_compressed(&size),
-                Error::BADREAD) << "failed to read subdirectory size";
+                Error::BADREAD) << "failed to read directory size";
         if (size < 0)
             return error_new(Error::BADREAD)
-                << "read negative subdirectory size " << size;
-        e->subdirectory.size = static_cast<uint32_t>(size);
+                << "read negative directory size " << size;
+        directory.size = static_cast<uint32_t>(size);
 
         int32_t checksum = 0;
         CHECK(p->i32_compressed(&checksum),
-                Error::BADREAD) << "failed to read subdirectory checksum";
-        e->subdirectory.checksum = static_cast<uint32_t>(checksum);
+                Error::BADREAD) << "failed to read directory checksum";
+        directory.checksum = static_cast<uint32_t>(checksum);
 
         uint32_t offset = 0;
         CHECK(p->offset(&offset),
-                Error::BADREAD) << "failed to read subdirectory offset";
+                Error::BADREAD) << "failed to read directory offset";
 
         Parser p2 = *p;
         p2.address = p->wz->file.start + offset;
-        CHECK(Directory::parse(
-                    &e->subdirectory.directory,
+        CHECK(wz::Directory::parse(
+                    &directory.directory,
                     &p2),
-                Error::BADREAD) << "failed to read subdirectory";
+                Error::BADREAD) << "failed to read directory";
+        e->entry = std::move(directory);
     } else {
-        e->kind = Entry::FILE;
-        e->file.name = name;
+        Entry::File file;
+        file.name = std::move(name);
 
         int32_t size = 0;
         CHECK(p->i32_compressed(&size),
@@ -148,12 +147,12 @@ Error Entry::parse(
         if (size < 0)
             return error_new(Error::BADREAD)
                 << "read negative file size " << size;
-        e->file.size = static_cast<uint32_t>(size);
+        file.size = static_cast<uint32_t>(size);
 
         int32_t checksum = 0;
         CHECK(p->i32_compressed(&checksum),
                 Error::BADREAD) << "failed to read file checksum";
-        e->file.checksum = static_cast<uint32_t>(checksum);
+        file.checksum = static_cast<uint32_t>(checksum);
 
         uint32_t offset = 0;
         CHECK(p->offset(&offset),
@@ -161,11 +160,12 @@ Error Entry::parse(
 
         Parser p2 = *p;
         p2.address = p->wz->file.start + offset;
-        e->file.file.base = p2.address;
-        CHECK(File::parse(
-                    &e->file.file,
+        file.file.base = p2.address;
+        CHECK(wz::File::parse(
+                    &file.file,
                     &p2),
                 Error::BADREAD) << "failed to read subdirectory";
+        e->entry = std::move(file);
     }
 
     return Error();

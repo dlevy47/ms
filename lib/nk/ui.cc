@@ -112,6 +112,7 @@ void Ui::input(
         double this_mouse_position[2] = {0};
         glfwGetCursorPos(
                 window->window,
+                window->window.get(),
                 &this_mouse_position[0],
                 &this_mouse_position[1]);
 
@@ -125,6 +126,7 @@ void Ui::input(
                 (int) this_mouse_position[0],
                 (int) this_mouse_position[1],
                 glfwGetMouseButton(window->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
+                glfwGetMouseButton(window->window.get(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
 
         gfx::Vector<double> window_scroll;
         if (window->consume_scroll(&window_scroll)) {

@@ -31,15 +31,16 @@ Error Sprite::Frame::load(
 Error Sprite::Frame::loadfromfile(
         Sprite::Frame* self,
         const wz::OpenedFile::Node* node) {
-    if (node->kind != wz::Property::CANVAS) {
+    const auto canvas = std::get_if<wz::OpenedFile::Canvas>(&node->value);
+    if (canvas == nullptr) {
         return error_new(Error::FRAMELOADFAILED)
             << "frame node is not a canvas";
     }
 
     CHECK(load(
                 self,
-                node->canvas.image,
-                node->canvas.image_data),
+                canvas->image,
+                canvas->image_data),
             Error::FRAMELOADFAILED)
         << "failed to load frame from image data";
 
@@ -110,8 +111,8 @@ Error Sprite::loadfromfile(
                 continue;
         }
 
-        if (frame_node->kind == wz::Property::UOL) {
-            frame_node = frame_node->parent->find(frame_node->uol);
+        if (const auto* uol = std::get_if<wz::OpenedFile::Uol>(&frame_node->value)) {
+            frame_node = frame_node->parent->find(uol->uol);
         }
 
         Frame frame;

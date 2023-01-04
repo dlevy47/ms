@@ -55,6 +55,14 @@ struct P {
         return x;
     }
 
+    T& operator[](size_t i) {
+        return x[i];
+    }
+
+    const T& operator[](size_t i) const {
+        return x[i];
+    }
+
     P():
         x(nullptr) {}
 

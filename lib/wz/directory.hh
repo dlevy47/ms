@@ -66,34 +66,30 @@ struct Directory {
 };
 
 struct Entry {
-    enum Kind {
-        UNKNOWN,
-        FILE,
-        SUBDIRECTORY,
+    struct Unknown {
+        uint32_t unknown1;
+        uint16_t unknown2;
+        uint32_t offset;
     };
 
-    Kind kind;
-    union {
-        struct {
-            uint32_t unknown1;
-            uint16_t unknown2;
-            uint32_t offset;
-        } unknown;
-
-        struct {
-            String name;
-            uint32_t size;
-            uint32_t checksum;
-            File file;
-        } file;
-
-        struct {
-            String name;
-            uint32_t size;
-            uint32_t checksum;
-            Directory directory;
-        } subdirectory;
+    struct File {
+        String name;
+        uint32_t size;
+        uint32_t checksum;
+        wz::File file;
     };
+
+    struct Directory {
+        String name;
+        uint32_t size;
+        uint32_t checksum;
+        wz::Directory directory;
+    };
+
+    std::variant<
+        Unknown,
+        File,
+        Directory> entry;
 
     static Error parse(
             Entry* into,

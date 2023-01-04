@@ -1,3 +1,5 @@
+#include "browser.hh"
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -9,7 +11,6 @@
 #include "wz/wz.hh"
 
 #include "gl.hh"
-#include "browser.hh"
 
 static void Browser_ui_fromfilenode(
         Browser* self,
@@ -27,45 +28,50 @@ static void Browser_ui_fromfilenode(
 
         std::wstringstream label;
         label << child->name;
-        switch (child->kind) {
-            case wz::Property::VOID:
+
+        switch (child->value.index()) {
+            case 0:
                 label << " = [void]";
                 break;
-            case wz::Property::UINT16:
-                label << " = [u16] " << child->uint16;
+            case 1:
+                label << " = [u16] " << *std::get_if<1>(&child->value);
                 break;
-            case wz::Property::INT32:
-                label << " = [i32] " << child->int32;
+            case 2:
+                label << " = [i32] " << *std::get_if<2>(&child->value);
                 break;
-            case wz::Property::FLOAT32:
-                label << " = [f32] " << child->float32;
+            case 3:
+                label << " = [f32] " << *std::get_if<3>(&child->value);
                 break;
-            case wz::Property::FLOAT64:
-                label << " = [f64] " << child->float64;
+            case 4:
+                label << " = [f64] " << *std::get_if<4>(&child->value);
                 break;
-            case wz::Property::STRING:
-                label << " = [str] " << child->string;
+            case 5:
+                label << " = [str] " << std::get_if<5>(&child->value)->string;
                 break;
-            case wz::Property::VECTOR:
-                label << " = [vec] " << child->vector[0] << ", " << child->vector[1];
+            case 6:
+                {
+                    const wz::Vector* v = std::get_if<6>(&child->value);
+                    label << " = [vec] " << v->x << ", " << v->y;
+                }
                 break;
-            case wz::Property::SOUND:
+            case 7:
                 label << " = [snd]";
                 break;
-            case wz::Property::UOL:
-                label << " = [uol] " << child->uol;
+            case 8:
+                label << " = [uol] " << std::get_if<8>(&child->value)->uol;
                 break;
-            case wz::Property::CANVAS:
-                label << " = [img] "
-                    << (child->canvas.image.is_encrypted() ? "E " : "C ")
-                    << child->canvas.image.width << " x " << child->canvas.image.height << " "
-                    << "(" << child->canvas.image.format << " " << static_cast<uint32_t>(child->canvas.image.format2) << ")";
-                break;
-            default:
-                break;
+            case 9:
+                {
+                    const auto* canvas = std::get_if<9>(&child->value);
+                    label << " = [img] "
+                        << (canvas->image.is_encrypted() ? "E " : "C ")
+                        << canvas->image.width << " x " << canvas->image.height << " "
+                        << "(" << canvas->image.format << " " << static_cast<uint32_t>(canvas->image.format2) << ")";
+                } break;
         }
 
-        if (child->children.count || child->kind == wz::Property::CANVAS) {
+        const auto* canvas = std::get_if<wz::OpenedFile::Canvas>(&child->value);
+        if (child->children.count || canvas != nullptr) {
             std::wstring this_stack = name_stack + L"-" + child->name;
 
             if (nk_tree_push_hashed(
@@ -76,11 +82,11 @@ static void Browser_ui_fromfilenode(
                         reinterpret_cast<const char*>(this_stack.c_str()),
                         this_stack.size() * sizeof(wchar_t),
                         0)) {
-                if (child->kind == wz::Property::CANVAS) {
+                if (canvas != nullptr) {
                     nk_layout_row_dynamic(self->ui.context, 0, 2); {
                         if (nk_button_label(self->ui.context, "Save")) {
                             std::vector<uint8_t> png_data;
-                            unsigned err = lodepng::encode(png_data, child->canvas.image_data, child->canvas.image.width, child->canvas.image.height);
+                            unsigned err = lodepng::encode(png_data, canvas->image_data, canvas->image.width, canvas->image.height);
                             if (err) {
                                 std::cerr << "failed to encode image data to PNG: " << err << "\n";
                             } else {

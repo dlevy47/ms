@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -14,6 +15,19 @@
 namespace wz {
 
 struct OpenedFile {
+    struct String {
+        wchar_t* string;
+    };
+
+    struct Uol {
+        wchar_t* uol;
+    };
+
+    struct Canvas {
+        wz::Image image;
+        uint8_t* image_data;
+    };
+
     struct Node {
         struct Iterator {
             const Node* node;
@@ -29,8 +43,6 @@ struct OpenedFile {
             }
         };
 
-        Property::Kind kind;
-
         // parent is a pointer to this Node's parent in the nodes arena.
         Node* parent;
 
@@ -41,24 +53,29 @@ struct OpenedFile {
         // children is a span of node indices in the containing OpenedFile's children
         // arena.
         struct {
-            uint32_t count;
+            uint32_t count { 0 };
             Node* start;
         } children;
 
-        union {
-            uint16_t uint16;
-            int32_t int32;
-            float float32;
-            double float64;
-            wchar_t* string;
-            int32_t vector[2];
-            uint8_t* sound;
-            wchar_t* uol;
-            struct {
-                wz::Image image;
-                uint8_t* image_data;
-            } canvas;
-        };
+        std::variant<
+            Void,
+            uint16_t,
+            int32_t,
+            float,
+            double,
+            String,
+            Vector,
+            uint8_t*,
+            Uol,
+            Canvas> value;
+
+        const String* string() const {
+            return std::get_if<String>(&value);
+        }
+
+        const Canvas* canvas() const {
+            return std::get_if<Canvas>(&value);
+        }
 
         Iterator iterator() const {
             Iterator it = {
@@ -115,14 +132,6 @@ struct OpenedFile {
                 return Error();
             }
 
-        Node():
-            kind(Property::VOID),
-            parent(0),
-            name(nullptr) {
-                children.count = 0;
-                children.start = nullptr;
-            }
-
         private:
 
         template <typename... Args>
@@ -161,24 +170,26 @@ struct OpenedFile {
         static Error deserialize_into(
                 const wz::OpenedFile::Node* node,
                 const wchar_t** destination) {
-            if (node->kind != wz::Property::STRING) {
+            if (const String* s = std::get_if<String>(&node->value)) {
+                *destination = s->string;
+            } else {
                 return error_new(Error::PROPERTYTYPEMISMATCH)
                     << "node is not string";
             }
 
-            *destination = node->string;
             return Error();
         }
 
         static Error deserialize_into(
                 const wz::OpenedFile::Node* node,
                 int32_t* destination) {
-            if (node->kind != wz::Property::INT32) {
+            if (const int32_t* i = std::get_if<int32_t>(&node->value)) {
+                *destination = *i;
+            } else {
                 return error_new(Error::PROPERTYTYPEMISMATCH)
                     << "node is not int32";
             }
 
-            *destination = node->int32;
             return Error();
         }
     };
@@ -262,18 +273,16 @@ struct Vfs {
         };
 
         Error open(Handle* h) {
-            if (!h) {
-                throw "handle cannot be null";
-            }
-
             if (rc == (uint32_t) 0) {
                 opened.reset(new OpenedFile());
-                CHECK(OpenedFile::open(wz, opened.get(), &file),
+                CHECK(OpenedFile::open(wz.get(), opened.get(), &file),
                         Error::OPENFAILED) << "failed to open file";
             }
 
-            h->file = this;
-            h->opened_file = opened.get();
+            if (h) {
+                h->file = this;
+                h->opened_file = opened.get();
+            }
             ++rc;
             return Error();
         }
@@ -341,9 +350,19 @@ struct Vfs {
     P<const wz::Wz> wz;
     Node root;
 
+    static Error opennamed(
+            Vfs* vfs,
+            const wz::Wz* wz,
+            std::wstring&& name);
+
     static Error open(
             Vfs* vfs,
-            const wz::Wz* wz);
+            const wz::Wz* wz) {
+        return opennamed(
+                vfs,
+                wz,
+                L"");
+    }
 
     Node* find(const wchar_t* path);
 

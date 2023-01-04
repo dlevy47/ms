@@ -362,47 +362,50 @@ Error Property::parse(
     switch (kind) {
         case 0x00:
             {
-                x->kind = VOID;
+                x->property = Void{};
             } break;
         case 0x02:
         case 0x0B:
             {
-                x->kind = UINT16;
-                CHECK(p->u16(&x->uint16),
+                uint16_t u = 0;
+                CHECK(p->u16(&u),
                         Error::BADREAD) << "failed to read u16 property";
+                x->property = u;
             } break;
         case 0x03:
             {
-                x->kind = INT32;
-                CHECK(p->i32_compressed(&x->int32),
+                int32_t i = 0;
+                CHECK(p->i32_compressed(&i),
                         Error::BADREAD) << "failed to read i32 property";
+                x->property = i;
             } break;
         case 0x04:
             {
-                x->kind = FLOAT32;
+                float f = 0;
 
                 uint8_t kind = 0;
                 CHECK(p->u8(&kind),
                         Error::BADREAD) << "failed to read f32 property kind";
 
                 if (kind == 0x80) {
-                    CHECK(p->f32(&x->float32),
+                    CHECK(p->f32(&f),
                             Error::BADREAD) << "failed to read f32 property";
-                } else {
-                    x->float32 = 0;
                 }
+                x->property = f;
             } break;
         case 0x05:
             {
-                x->kind = FLOAT64;
-                CHECK(p->f64(&x->float64),
+                double d = 0;
+                CHECK(p->f64(&d),
                         Error::BADREAD) << "failed to read f64 property";
+                x->property = d;
             } break;
         case 0x08:
             {
-                x->kind = STRING;
-                CHECK(String::parse_withoffset(&x->string, p, file_base),
+                String s;
+                CHECK(String::parse_withoffset(&s, p, file_base),
                         Error::BADREAD) << "failed to read string property";
+                x->property = s;
             } break;
         case 0x09:
             {
@@ -450,45 +453,48 @@ Error Property::parse_named(
             Error::BADREAD) << "failed to decrypt kind of named property";
 
     if (::wcscmp(kind_name, L"Property") == 0) {
-        x->kind = CONTAINER;
+        PropertyContainer container;
 
         // Skip unknown 2 bytes;
         p->address += 2;
 
-        CHECK(PropertyContainer::parse(&x->container, p, file_base),
+        CHECK(PropertyContainer::parse(&container, p, file_base),
                 Error::BADREAD) << "failed to read property container";
+        x->property = std::move(container);
     } else if (::wcscmp(kind_name, L"Canvas") == 0) {
-        x->kind = CANVAS;
+        Canvas canvas;
 
         // Skip unknown byte.
         ++p->address;
 
-        CHECK(Canvas::parse(&x->canvas, p, file_base),
+        CHECK(Canvas::parse(&canvas, p, file_base),
                 Error::BADREAD) << "failed to read canvas";
+        x->property = std::move(canvas);
     } else if (::wcscmp(kind_name, L"Shape2D#Vector2D") == 0) {
-        x->kind = VECTOR;
+        Vector vector;
 
-        CHECK(p->i32_compressed(&x->vector[0]),
+        CHECK(p->i32_compressed(&vector.x),
                 Error::BADREAD) << "failed to read vector x";
-        CHECK(p->i32_compressed(&x->vector[1]),
+        CHECK(p->i32_compressed(&vector.y),
                 Error::BADREAD) << "failed to read vector y";
+        x->property = vector;
     } else if (::wcscmp(kind_name, L"Shape2D#Convex2D") == 0) {
-        x->kind = NAMEDCONTAINER;
+        NamedPropertyContainer named_container;
 
-        CHECK(NamedPropertyContainer::parse(&x->named_container, p, file_base),
+        CHECK(NamedPropertyContainer::parse(&named_container, p, file_base),
                 Error::BADREAD) << "failed to read named property container";
+        x->property = std::move(named_container);
     } else if (::wcscmp(kind_name, L"Sound_DX8") == 0) {
-        x->kind = SOUND;
-
-        x->sound = p->address;
+        const uint8_t* sound = p->address;
+        x->property = sound;
     } else if (::wcscmp(kind_name, L"UOL") == 0) {
-        x->kind = UOL;
-
         // Skip unknown byte.
         ++p->address;
 
-        CHECK(String::parse_withoffset(&x->uol, p, file_base),
+        Uol uol;
+        CHECK(String::parse_withoffset(&uol.uol, p, file_base),
                 Error::BADREAD) << "failed to read UOL";
+        x->property = uol;
     } else
         return error_new(Error::UNKNOWNPROPERTYKINDNAME)
             << "unknown named property kind name " << kind_name;
