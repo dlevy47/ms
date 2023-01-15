@@ -45,6 +45,16 @@ struct Demo {
     // map_state_renderer renders a provided map state.
     client::renderer::MapState map_state_renderer;
 
+    // map_state_renderer_options contains the draw options for the map state.
+    client::renderer::MapState::Options map_state_options {
+        .debug = {
+            .bounding_box = true,
+            .footholds = true,
+            .ladders = true,
+            .portals = true,
+        },
+    };
+
     // map_viewport is the map coordinate rectangle to draw.
     gfx::Rect<double> map_viewport;
 

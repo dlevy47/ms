@@ -59,6 +59,21 @@ Error Demo::draw_ui(gl::Window* window) {
     }
     nk_end(ui.context);
 
+    if (nk_begin(ui.context, "Debug", nk_rect(window_size.x / 3, window_size.y / 2, window_size.x / 3, window_size.y / 3),
+                NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_BACKGROUND)) {
+        nk_layout_row_dynamic(ui.context, 30, 1);
+
+        map_state_options.debug.bounding_box =
+            !nk_check_label(ui.context, "bounding boxes", !map_state_options.debug.bounding_box);
+        map_state_options.debug.footholds =
+            !nk_check_label(ui.context, "footholds", !map_state_options.debug.footholds);
+        map_state_options.debug.ladders =
+            !nk_check_label(ui.context, "ladders", !map_state_options.debug.ladders);
+        map_state_options.debug.portals =
+            !nk_check_label(ui.context, "portals", !map_state_options.debug.portals);
+    }
+    nk_end(ui.context);
+
     return Error();
 }
 

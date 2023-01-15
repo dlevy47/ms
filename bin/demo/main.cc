@@ -18,8 +18,6 @@
 #include "wz/vfs.hh"
 #include "gl.hh"
 
-#include "oui-blendish/blendish.h"
-
 #include "demo.hh"
 
 enum {
@@ -206,13 +204,8 @@ Error main_(const std::vector<std::string>& args) {
                     }
                 }
 
-                client::renderer::MapState::Options options;
-                options.debug.portals = true;
-                options.debug.footholds = true;
-                options.debug.ladders = true;
-                options.debug.bounding_box = true;
                 CHECK(demo.map_state_renderer.render(
-                            &options,
+                            &demo.map_state_options,
                             &target,
                             &demo.map_loader,
                             demo.map_state.get(),

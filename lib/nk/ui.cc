@@ -111,7 +111,6 @@ void Ui::input(
     nk_input_begin(context); {
         double this_mouse_position[2] = {0};
         glfwGetCursorPos(
-                window->window,
                 window->window.get(),
                 &this_mouse_position[0],
                 &this_mouse_position[1]);
@@ -125,8 +124,12 @@ void Ui::input(
                 NK_BUTTON_LEFT,
                 (int) this_mouse_position[0],
                 (int) this_mouse_position[1],
-                glfwGetMouseButton(window->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
                 glfwGetMouseButton(window->window.get(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
+
+        if (window->scroll.available) {
+            std::cout
+                << "scroll " << window->scroll.value << "\n";
+        }
 
         gfx::Vector<double> window_scroll;
         if (window->consume_scroll(&window_scroll)) {
@@ -135,6 +138,8 @@ void Ui::input(
                 .y = static_cast<float>(window_scroll.y),
             };
             nk_input_scroll(context, scroll);
+            std::cout
+                << "[nk] input scroll " << window_scroll << "\n";
         }
 
         if (keys) {
@@ -164,11 +169,6 @@ void Ui::input(
 
                 window->keys.pop();
             }
-
-            nk_input_key(
-                    context,
-                    NK_KEY_BACKSPACE,
-                    glfwGetKey(window->window, GLFW_KEY_BACKSPACE) == GLFW_RELEASE ? 0 : 1);
         }
     }
     nk_input_end(context);

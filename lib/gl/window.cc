@@ -9,10 +9,6 @@ void Window::char_callback(unsigned int codepoint) {
 }
 
 void Window::key_callback(int key, int scancode, int action, int mods) {
-    if (action == GLFW_REPEAT) {
-        return;
-    }
-
     Keypress k = {
         .key = key,
         .action = action,

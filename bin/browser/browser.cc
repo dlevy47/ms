@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 #include "lodepng/lodepng.h"
 
@@ -218,8 +219,11 @@ Error Browser::init(
                 Error::OPENFAILED) << "failed to open " << argv[i].c_str();
         std::cerr << "wz loaded\n";
 
+        std::wstringstream ss;
+        ss << argv[i].c_str();
+
         std::cerr << "loading vfs\n";
-        CHECK(wz::Vfs::open(&bf->vfs, &bf->wz),
+        CHECK(wz::Vfs::opennamed(&bf->vfs, &bf->wz, ss.str()),
                 Error::OPENFAILED) << "failed to build vfs";
         std::cerr << "vfs loaded \n";
     }
