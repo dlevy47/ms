@@ -136,21 +136,16 @@ static Error TileSet_load(
         const wchar_t* tileset_name_s,
         Map::LoadResults* results) {
     // Open the tileset file.
-    wz::Vfs::Node* tileset_file_node = nullptr;
-    std::wstring tileset_file_node_name;
-    {
-        std::wstringstream ss;
-        ss << "Tile/" << tileset_name_s << ".img";
-        tileset_file_node_name = ss.str();
-
-        tileset_file_node = map_vfs->find(tileset_file_node_name.c_str());
-    }
-    if (tileset_file_node == nullptr || tileset_file_node->file() == nullptr) {
+    wz::Vfs::File* tileset_file = map_vfs
+        ->child(L"Tile")
+        .child(wz::Basename{tileset_name_s})
+        .file();
+    if (tileset_file == nullptr) {
         return error_new(Error::TILESET_LOAD_MISSINGFILE)
-            << "missing or invalid tileset file: " << tileset_file_node_name;
+            << "missing or invalid tileset file: " << tileset_name_s;
     }
 
-    CHECK(tileset_file_node->file()->open(&tileset->tileset_file),
+    CHECK(tileset_file->open(&tileset->tileset_file),
             Error::OPENFAILED) << "failed to open tileset file";
 
     auto group_it = tileset->tileset_file->iterator();
@@ -227,21 +222,16 @@ static Error ObjectSet_load(
         const wchar_t* objectset_name_s,
         Map::LoadResults* results) {
     // Open the objectset file.
-    wz::Vfs::Node* objectset_file_node = nullptr;
-    std::wstring objectset_file_node_name;
-    {
-        std::wstringstream ss;
-        ss << "Obj/" << objectset_name_s << ".img";
-        objectset_file_node_name = ss.str();
-
-        objectset_file_node = map_vfs->find(objectset_file_node_name.c_str());
-    }
-    if (objectset_file_node == nullptr || objectset_file_node->file() == nullptr) {
+    wz::Vfs::File* objectset_file = map_vfs
+        ->child(L"Obj")
+        .child(wz::Basename{objectset_name_s})
+        .file();
+    if (objectset_file == nullptr) {
         return error_new(Error::OBJECTSET_LOAD_MISSINGFILE)
-            << "missing or invalid objectset file: " << objectset_file_node_name;
+            << "missing or invalid objectset file: " << objectset_name_s;
     }
 
-    CHECK(objectset_file_node->file()->open(&objectset->objectset_file),
+    CHECK(objectset_file->open(&objectset->objectset_file),
             Error::OPENFAILED) << "failed to open objectset file";
 
     auto l0_it = objectset->objectset_file->iterator();
@@ -509,22 +499,17 @@ static Error Map_load_background(
     }
 
     // Find the background file.
-    wz::Vfs::Node* back_file_node = nullptr;
-    std::wstring back_file_node_name;
-    {
-        std::wstringstream ss;
-        ss << "Back/" << back_file_node_basename << ".img";
-        back_file_node_name = ss.str();
-
-        back_file_node = map_vfs->find(back_file_node_name.c_str());
-    }
-    if (back_file_node == nullptr || back_file_node->file() == nullptr) {
+    wz::Vfs::File* back_file = map_vfs
+        ->child(L"Back")
+        .child(wz::Basename{back_file_node_basename})
+        .file();
+    if (back_file == nullptr) {
         return error_new(Error::BACKGROUND_LOAD_MISSINGFILE)
-            << "missing or invalid background file: " << back_file_node_name;
+            << "missing or invalid background file: " << back_file_node_basename;
     }
 
     // Open the background file.
-    CHECK(back_file_node->file()->open(&background->background_file),
+    CHECK(back_file->open(&background->background_file),
             Error::OPENFAILED) << "failed to open back file";
 
     // Load the background frame.

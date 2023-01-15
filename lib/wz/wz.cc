@@ -1,5 +1,7 @@
 #include "wz/wz.hh"
 
+// The following 4 functions provide platform-specific functionality for
+// mapping files into memory.
 extern "C" {
     int _wz_openfileforread(
             int* handle_out,

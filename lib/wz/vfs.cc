@@ -428,4 +428,42 @@ Vfs::Node* Vfs::find(const wchar_t* path) {
     return Vfs_Node_find(&root, path);
 }
 
+const Vfs::Node::Maybe Vfs::Node::child(
+        const wchar_t* name) {
+    Vfs::Directory* dir = directory();
+    if (!dir)
+        return Vfs::Node::Maybe {
+            .node = nullptr,
+        };
+
+    auto it = dir->children.find(name);
+    if (it == dir->children.end())
+        return Vfs::Node::Maybe {
+            .node = nullptr,
+        };
+
+    return Vfs::Node::Maybe {
+        .node = &it->second,
+    };
+}
+
+const Vfs::Node::Maybe Vfs::Node::child(
+        const Basename& b) {
+    Vfs::Directory* dir = directory();
+    if (!dir)
+        return Vfs::Node::Maybe {
+            .node = nullptr,
+        };
+
+    auto it = dir->children.find(b);
+    if (it == dir->children.end())
+        return Vfs::Node::Maybe {
+            .node = nullptr,
+        };
+
+    return Vfs::Node::Maybe {
+        .node = &it->second,
+    };
+}
+
 };

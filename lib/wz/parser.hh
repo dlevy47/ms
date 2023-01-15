@@ -10,6 +10,8 @@ namespace wz {
 
 struct Wz;
 
+// Parser provides a bound-checked cursor for reading WZ file primitives from
+// memory.
 struct Parser {
     const uint8_t* address;
     const Wz* wz;

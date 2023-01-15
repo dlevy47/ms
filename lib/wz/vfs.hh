@@ -14,6 +14,10 @@
 
 namespace wz {
 
+struct Basename {
+    const std::wstring_view name;
+};
+
 struct OpenedFile {
     struct String {
         wchar_t* string;
@@ -29,6 +33,23 @@ struct OpenedFile {
     };
 
     struct Node {
+        struct Maybe {
+            const Node* node;
+
+            const Maybe child(
+                    const wchar_t* name) const {
+                if (node)
+                    return node->child(name);
+
+                return *this;
+            }
+
+            const Maybe child(
+                    const std::wstring& name) const {
+                return child(name.c_str());
+            }
+        };
+
         struct Iterator {
             const Node* node;
             uint32_t next_index;
@@ -88,6 +109,13 @@ struct OpenedFile {
 
         const Node* find(
                 const wchar_t* path) const;
+
+        const Maybe child(
+                const wchar_t* name) const;
+        const Maybe child(
+                const std::wstring& name) const {
+            return child(name.c_str());
+        }
 
         Error childint32(
                 const wchar_t* n,
@@ -307,11 +335,50 @@ struct Vfs {
             using hash_type = std::hash<std::wstring_view>;
             using is_transparent = void;
 
-            std::size_t operator()(const wchar_t* str) const { return hash_type{}(str); }
-            std::size_t operator()(std::wstring_view str) const { return hash_type{}(str); }
-            std::size_t operator()(std::wstring const& str) const { return hash_type{}(str); }
+            std::size_t operator()(const wchar_t* str) const { return operator()(std::wstring_view{str}); }
+            std::size_t operator()(std::wstring const& str) const { return operator()((std::wstring_view) str); }
+            std::size_t operator()(std::wstring_view str) const {
+                if (str.ends_with(L".img")) {
+                    str.remove_suffix(4);
+                    return operator()(Basename{str});
+                }
+
+                return hash_type{}(str);
+            }
+            std::size_t operator()(const Basename& basename) const {
+                hash_type hasher;
+                const std::size_t kMul = 0x9ddfea08eb382d69ULL;
+
+                std::size_t seed = hasher(basename.name);
+
+                std::size_t a = (hasher(L".img") ^ seed) * kMul;
+                a ^= (a >> 47);
+
+                std::size_t b = (seed ^ a) * kMul;
+                b ^= (b >> 47);
+
+                return b * kMul;
+            }
         };
-        std::unordered_map<std::wstring, Node, Hash, std::equal_to<>> children;
+
+        struct Equal {
+            using is_transparent = void;
+
+            bool operator()(const std::wstring& l, const Basename& r) const {
+                return (l.size() == r.name.size() + 4) && l.starts_with(r.name) && l.ends_with(L".img");
+            }
+            bool operator()(const std::wstring& l, const std::wstring_view& r) const {
+                return l == r;
+            }
+            bool operator()(const std::wstring& l, const std::wstring& r) const {
+                return ::wcscmp(l.c_str(), r.c_str()) == 0;
+            }
+            bool operator()(const std::wstring& l, const wchar_t* r) const {
+                return ::wcscmp(l.c_str(), r) == 0;
+            }
+        };
+
+        std::unordered_map<std::wstring, Node, Hash, Equal> children;
 
         Directory() = default;
         Directory(Directory&&) = default;
@@ -319,12 +386,47 @@ struct Vfs {
     };
 
     struct Node {
+        struct Maybe {
+            Node* node;
+
+            template <typename... Ts>
+            auto child(Ts... args) const {
+                if (node)
+                    return node->child(args...);
+
+                return *this;
+            }
+
+            Directory* directory() const {
+                if (node)
+                    return node->directory();
+
+                return nullptr;
+            }
+
+            File* file() const {
+                if (node)
+                    return node->file();
+
+                return nullptr;
+            }
+        };
+
         P<Node> parent;
         std::wstring name;
 
         std::variant<
             Directory,
             File> contents;
+
+        const Maybe child(
+                const wchar_t* name);
+        const Maybe child(
+                const std::wstring& name) {
+            return child(name.c_str());
+        }
+        const Maybe child(
+                const Basename& b);
 
         Directory* directory() {
             return std::get_if<Directory>(&contents);
@@ -365,6 +467,19 @@ struct Vfs {
     }
 
     Node* find(const wchar_t* path);
+
+    const Node::Maybe child(
+            const wchar_t* name) {
+        return root.child(name);
+    }
+    const Node::Maybe child(
+            const std::wstring& name) {
+        return root.child(name);
+    }
+    const Node::Maybe child(
+            const Basename& b) {
+        return root.child(b);
+    }
 
     Vfs() = default;
     Vfs(Vfs&&) = default;

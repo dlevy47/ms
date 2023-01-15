@@ -9,9 +9,15 @@ namespace wz {
 
 struct Entry;
 
+// EntryContainer provides iteration over entries in a WZ directory.
 struct EntryContainer {
     struct Iterator {
+        // remaining is the number of entries in this container remaining to
+        // be iterated over.
         uint32_t remaining;
+
+        // parser is the parser used to parse entries in this container. This
+        // is a different parser object than the one used to read the Wz.
         Parser parser;
 
         Error next(Entry* x);
