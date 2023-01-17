@@ -33,16 +33,16 @@ struct Program {
     };
 
     static Error compileandlink(
-            Program* program,
-            const CompileOptions* options);
+        Program* program,
+        const CompileOptions* options);
 
     operator GLuint() const {
         return program;
     }
 
     Error attribute(
-            const char* name,
-            GLuint* a) const {
+        const char* name,
+        GLuint* a) const {
         auto it = attributes.find(name);
         if (it == attributes.end()) {
             return error_new(Error::GLERROR)
@@ -82,50 +82,50 @@ struct Drawable {
     };
 
     static Error init(
-            Drawable* self,
-            const Program<V>* program,
-            const InitOptions* options);
+        Drawable* self,
+        const Program<V>* program,
+        const InitOptions* options);
 
     void vbo_load(
-            const V* vertices,
-            size_t count) {
+        const V* vertices,
+        size_t count) {
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(
-                GL_ARRAY_BUFFER,
-                count * sizeof(V),
-                vertices,
-                GL_STREAM_DRAW);
+            GL_ARRAY_BUFFER,
+            count * sizeof(V),
+            vertices,
+            GL_STREAM_DRAW);
     }
 
     template <typename E>
     void ebo_load_(
-            const E* indices,
-            size_t count) {
+        const E* indices,
+        size_t count) {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         glBufferData(
-                GL_ELEMENT_ARRAY_BUFFER,
-                count * sizeof(E),
-                indices,
-                GL_STREAM_DRAW);
+            GL_ELEMENT_ARRAY_BUFFER,
+            count * sizeof(E),
+            indices,
+            GL_STREAM_DRAW);
     }
 
     void ebo_load(
-            const uint8_t* indices,
-            size_t count) {
+        const uint8_t* indices,
+        size_t count) {
         ebo_type = GL_UNSIGNED_BYTE;
         ebo_load_(indices, count);
     }
 
     void ebo_load(
-            const uint16_t* indices,
-            size_t count) {
+        const uint16_t* indices,
+        size_t count) {
         ebo_type = GL_UNSIGNED_SHORT;
         ebo_load_(indices, count);
     }
 
     void ebo_load(
-            const uint32_t* indices,
-            size_t count) {
+        const uint32_t* indices,
+        size_t count) {
         ebo_type = GL_UNSIGNED_INT;
         ebo_load_(indices, count);
     }

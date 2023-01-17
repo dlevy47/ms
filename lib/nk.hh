@@ -24,17 +24,17 @@ struct Handle {
         present = true;
     }
 
-    operator T*() {return &x;}
-    operator const T*() const {return &x;}
+    operator T* () { return &x; }
+    operator const T* () const { return &x; }
 
-    T* operator->() {return &x;}
-    const T* operator->() const {return &x;}
+    T* operator->() { return &x; }
+    const T* operator->() const { return &x; }
 
     Handle(Handle&& rhs):
         x(),
         present(std::exchange(rhs.present, false)) {
-            x = rhs.x;
-        }
+        x = rhs.x;
+    }
 
     ~Handle() {
         if (present && F)

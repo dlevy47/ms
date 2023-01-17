@@ -14,11 +14,11 @@ extern "C" {
 }
 
 Error String::parse(
-        String* s,
-        Parser* p) {
+    String* s,
+    Parser* p) {
     int8_t small_length = 0;
     CHECK(p->i8(&small_length),
-            Error::BADREAD) << "failed to read string length";
+        Error::BADREAD) << "failed to read string length";
 
     if (small_length == 0) {
         s->len = 0;
@@ -26,7 +26,7 @@ Error String::parse(
         uint32_t length = 0;
         if (small_length == 0x7F) {
             CHECK(p->u32(&length),
-                    Error::BADREAD) << "failed to read two byte string length";
+                Error::BADREAD) << "failed to read two byte string length";
         } else {
             length = static_cast<uint32_t>(small_length);
         }
@@ -39,7 +39,7 @@ Error String::parse(
         uint32_t length = 0;
         if (small_length == -128) {
             CHECK(p->u32(&length),
-                    Error::BADREAD) << "failed to read one byte string length";
+                Error::BADREAD) << "failed to read one byte string length";
         } else {
             length = static_cast<uint32_t>(-small_length);
         }
@@ -54,37 +54,37 @@ Error String::parse(
 }
 
 Error String::parse_withoffset(
-        String* s,
-        Parser* p,
-        const uint8_t* file_base) {
+    String* s,
+    Parser* p,
+    const uint8_t* file_base) {
     uint8_t kind = 0;
     CHECK(p->u8(&kind),
-            Error::BADREAD) << "failed to read relocated string offset kind";
+        Error::BADREAD) << "failed to read relocated string offset kind";
 
     switch (kind) {
-        case 0x00:
-        case 0x73:
-            // Inline string.
-            {
-                CHECK(String::parse(s, p),
-                        Error::BADREAD) << "failed to read inline string";
-            } break;
-        case 0x01:
-        case 0x1B:
-            // Relative offset.
-            {
-                int32_t relative = 0;
-                CHECK(p->i32(&relative),
-                        Error::BADREAD) << "failed to read relative string offset";
+    case 0x00:
+    case 0x73:
+        // Inline string.
+    {
+        CHECK(String::parse(s, p),
+            Error::BADREAD) << "failed to read inline string";
+    } break;
+    case 0x01:
+    case 0x1B:
+        // Relative offset.
+    {
+        int32_t relative = 0;
+        CHECK(p->i32(&relative),
+            Error::BADREAD) << "failed to read relative string offset";
 
-                Parser p2 = *p;
-                p2.address = file_base + relative;
-                CHECK(String::parse(s, &p2),
-                        Error::BADREAD) << "failed to read offset string";
-            } break;
-        default:
-            return error_new(Error::UNKNOWNSTRINGOFFSETKIND)
-                << "unknown string offset kind " << kind;
+        Parser p2 = *p;
+        p2.address = file_base + relative;
+        CHECK(String::parse(s, &p2),
+            Error::BADREAD) << "failed to read offset string";
+    } break;
+    default:
+        return error_new(Error::UNKNOWNSTRINGOFFSETKIND)
+            << "unknown string offset kind " << kind;
     }
 
     return Error();
@@ -95,34 +95,34 @@ Error String::decrypt(wchar_t* s) const {
         return Error();
 
     switch (kind) {
-        case ONEBYTE:
-            {
-                uint8_t mask = 0xAA;
-                const uint8_t* from = at;
-                for (uint32_t i = 0; i < len; ++i) {
-                    *s = *from;
+    case ONEBYTE:
+    {
+        uint8_t mask = 0xAA;
+        const uint8_t* from = at;
+        for (uint32_t i = 0; i < len; ++i) {
+            *s = *from;
 
-                    *s ^= mask;
-                    *s ^= wz_key[i & 0xFFFF];
-                    ++mask;
-                    ++s;
-                    ++from;
-                }
-            } break;
-        case TWOBYTE:
-            {
-                uint16_t mask = 0xAAAA;
-                const uint16_t* from = reinterpret_cast<const uint16_t*>(at);
-                for (uint32_t i = 0; i < len; ++i) {
-                    *s = *from;
+            *s ^= mask;
+            *s ^= wz_key[i & 0xFFFF];
+            ++mask;
+            ++s;
+            ++from;
+        }
+    } break;
+    case TWOBYTE:
+    {
+        uint16_t mask = 0xAAAA;
+        const uint16_t* from = reinterpret_cast<const uint16_t*>(at);
+        for (uint32_t i = 0; i < len; ++i) {
+            *s = *from;
 
-                    *s ^= mask;
-                    *s ^= (wz_key[((i * 2) + 1) & 0xFFFF] << 8) + wz_key[(i * 2) & 0xFFFF];
-                    ++mask;
-                    ++s;
-                    ++from;
-                }
-            } break;
+            *s ^= mask;
+            *s ^= (wz_key[((i * 2) + 1) & 0xFFFF] << 8) + wz_key[(i * 2) & 0xFFFF];
+            ++mask;
+            ++s;
+            ++from;
+        }
+    } break;
     }
 
     return Error();
@@ -157,9 +157,9 @@ Error Image::pixels(uint8_t* out) const {
         // Operate in blocks of 4096 bytes.
         enum { blocksize = 4096 };
 
-        uint8_t input_block[blocksize] = {0};
-        uint8_t output_block[blocksize] = {0};
-        z_stream z = {0};
+        uint8_t input_block[blocksize] = { 0 };
+        uint8_t output_block[blocksize] = { 0 };
+        z_stream z = { 0 };
         int z_err = Z_OK;
 
         inflateInit(&z);
@@ -284,159 +284,159 @@ Error Image::pixels(uint8_t* out) const {
 }
 
 Error Image::parse(
-        Image* x,
-        Parser* p) {
+    Image* x,
+    Parser* p) {
     int32_t w = 0;
     CHECK(p->i32_compressed(&w),
-            Error::BADREAD) << "failed to read image width";
+        Error::BADREAD) << "failed to read image width";
     if (w < 0)
         return error_new(Error::BADREAD)
-            << "read negative image width " << w;
+        << "read negative image width " << w;
     x->width = static_cast<uint32_t>(w);
 
     int32_t h = 0;
     CHECK(p->i32_compressed(&h),
-            Error::BADREAD) << "failed to read image height";
+        Error::BADREAD) << "failed to read image height";
     if (h < 0)
         return error_new(Error::BADREAD)
-            << "read negative image height " << h;
+        << "read negative image height " << h;
     x->height = static_cast<uint32_t>(h);
 
     CHECK(p->i32_compressed(&x->format),
-            Error::BADREAD) << "failed to read image format";
+        Error::BADREAD) << "failed to read image format";
     CHECK(p->u8(&x->format2),
-            Error::BADREAD) << "failed to read image format2";
+        Error::BADREAD) << "failed to read image format2";
     CHECK(p->i32(&x->unknown1),
-            Error::BADREAD) << "failed to read image unknown1";
+        Error::BADREAD) << "failed to read image unknown1";
     CHECK(p->u32(&x->length),
-            Error::BADREAD) << "failed to read image length";
+        Error::BADREAD) << "failed to read image length";
     CHECK(p->u8(&x->unknown2),
-            Error::BADREAD) << "failed to read image unknown2";
+        Error::BADREAD) << "failed to read image unknown2";
     x->data = p->address;
 
     return Error();
 }
 
 Error Canvas::parse(
-        Canvas* x,
-        Parser* p,
-        const uint8_t* file_base) {
+    Canvas* x,
+    Parser* p,
+    const uint8_t* file_base) {
     uint8_t has_children = 0;
     CHECK(p->u8(&has_children),
-            Error::BADREAD) << "failed to read canvas first byte";
+        Error::BADREAD) << "failed to read canvas first byte";
 
     if (has_children) {
         // Skip 2 unknown bytes.
         p->address += 2;
 
         CHECK(PropertyContainer::parse(&x->children, p, file_base),
-                Error::BADREAD) << "failed to read canvas child container";
+            Error::BADREAD) << "failed to read canvas child container";
 
         // Unfortunately, we have to parse the entire children container
         // to know where the image starts.
         for (uint32_t i = 0; i < x->children.count; ++i) {
             Property x;
             CHECK(Property::parse(&x, p, file_base),
-                    Error::BADREAD) << "failed to read canvas child " << i;
+                Error::BADREAD) << "failed to read canvas child " << i;
         }
     } else {
         x->children.count = 0;
     }
 
     CHECK(Image::parse(&x->image, p),
-            Error::BADREAD) << "failed to read canvas image";
+        Error::BADREAD) << "failed to read canvas image";
     return Error();
 }
 
 Error Property::parse(
-        Property* x,
-        Parser* p,
-        const uint8_t* file_base) {
+    Property* x,
+    Parser* p,
+    const uint8_t* file_base) {
     CHECK(String::parse_withoffset(&x->name, p, file_base),
-            Error::BADREAD) << "failed to read property name";
+        Error::BADREAD) << "failed to read property name";
 
     uint8_t kind = 0;
     CHECK(p->u8(&kind),
-            Error::BADREAD) << "failed to read property kind";
+        Error::BADREAD) << "failed to read property kind";
 
     switch (kind) {
-        case 0x00:
-            {
-                x->property = Void{};
-            } break;
-        case 0x02:
-        case 0x0B:
-            {
-                uint16_t u = 0;
-                CHECK(p->u16(&u),
-                        Error::BADREAD) << "failed to read u16 property";
-                x->property = u;
-            } break;
-        case 0x03:
-            {
-                int32_t i = 0;
-                CHECK(p->i32_compressed(&i),
-                        Error::BADREAD) << "failed to read i32 property";
-                x->property = i;
-            } break;
-        case 0x04:
-            {
-                float f = 0;
+    case 0x00:
+    {
+        x->property = Void{};
+    } break;
+    case 0x02:
+    case 0x0B:
+    {
+        uint16_t u = 0;
+        CHECK(p->u16(&u),
+            Error::BADREAD) << "failed to read u16 property";
+        x->property = u;
+    } break;
+    case 0x03:
+    {
+        int32_t i = 0;
+        CHECK(p->i32_compressed(&i),
+            Error::BADREAD) << "failed to read i32 property";
+        x->property = i;
+    } break;
+    case 0x04:
+    {
+        float f = 0;
 
-                uint8_t kind = 0;
-                CHECK(p->u8(&kind),
-                        Error::BADREAD) << "failed to read f32 property kind";
+        uint8_t kind = 0;
+        CHECK(p->u8(&kind),
+            Error::BADREAD) << "failed to read f32 property kind";
 
-                if (kind == 0x80) {
-                    CHECK(p->f32(&f),
-                            Error::BADREAD) << "failed to read f32 property";
-                }
-                x->property = f;
-            } break;
-        case 0x05:
-            {
-                double d = 0;
-                CHECK(p->f64(&d),
-                        Error::BADREAD) << "failed to read f64 property";
-                x->property = d;
-            } break;
-        case 0x08:
-            {
-                String s;
-                CHECK(String::parse_withoffset(&s, p, file_base),
-                        Error::BADREAD) << "failed to read string property";
-                x->property = s;
-            } break;
-        case 0x09:
-            {
-                uint32_t end_offset = 0;
-                CHECK(p->u32(&end_offset),
-                        Error::BADREAD) << "failed to read named property end";
-                const uint8_t* end = p->address + end_offset;
+        if (kind == 0x80) {
+            CHECK(p->f32(&f),
+                Error::BADREAD) << "failed to read f32 property";
+        }
+        x->property = f;
+    } break;
+    case 0x05:
+    {
+        double d = 0;
+        CHECK(p->f64(&d),
+            Error::BADREAD) << "failed to read f64 property";
+        x->property = d;
+    } break;
+    case 0x08:
+    {
+        String s;
+        CHECK(String::parse_withoffset(&s, p, file_base),
+            Error::BADREAD) << "failed to read string property";
+        x->property = s;
+    } break;
+    case 0x09:
+    {
+        uint32_t end_offset = 0;
+        CHECK(p->u32(&end_offset),
+            Error::BADREAD) << "failed to read named property end";
+        const uint8_t* end = p->address + end_offset;
 
-                CHECK(Property::parse_named(x, p, file_base, &x->name),
-                        Error::BADREAD) << "failed to read named property";
+        CHECK(Property::parse_named(x, p, file_base, &x->name),
+            Error::BADREAD) << "failed to read named property";
 
-                p->address = end;
-            } break;
-        default:
-            {
-                return error_new(Error::UNKNOWNPROPERTYKIND)
-                    << "unknown property kind " << kind;
-            } break;
+        p->address = end;
+    } break;
+    default:
+    {
+        return error_new(Error::UNKNOWNPROPERTYKIND)
+            << "unknown property kind " << kind;
+    } break;
     }
 
     return Error();
 }
 
 Error Property::parse_named(
-        Property* x,
-        Parser* p,
-        const uint8_t* file_base,
-        const String* name) {
+    Property* x,
+    Parser* p,
+    const uint8_t* file_base,
+    const String* name) {
     String kind;
     CHECK(String::parse_withoffset(&kind, p, file_base),
-            Error::BADREAD) << "failed to read kind of named property";
+        Error::BADREAD) << "failed to read kind of named property";
 
     if (name) {
         x->name = *name;
@@ -445,12 +445,12 @@ Error Property::parse_named(
     }
 
     // len("Shape2D#Vector2D") == 16
-    wchar_t kind_name[17] = {0};
+    wchar_t kind_name[17] = { 0 };
     if (kind.len >= sizeof(kind_name) / sizeof(*kind_name))
         return error_new(Error::UNKNOWNPROPERTYKINDNAME)
-            << "unknown named property kind name (len " << kind.len << " too long)";
+        << "unknown named property kind name (len " << kind.len << " too long)";
     CHECK(kind.decrypt(kind_name),
-            Error::BADREAD) << "failed to decrypt kind of named property";
+        Error::BADREAD) << "failed to decrypt kind of named property";
 
     if (::wcscmp(kind_name, L"Property") == 0) {
         PropertyContainer container;
@@ -459,7 +459,7 @@ Error Property::parse_named(
         p->address += 2;
 
         CHECK(PropertyContainer::parse(&container, p, file_base),
-                Error::BADREAD) << "failed to read property container";
+            Error::BADREAD) << "failed to read property container";
         x->property = std::move(container);
     } else if (::wcscmp(kind_name, L"Canvas") == 0) {
         Canvas canvas;
@@ -468,21 +468,21 @@ Error Property::parse_named(
         ++p->address;
 
         CHECK(Canvas::parse(&canvas, p, file_base),
-                Error::BADREAD) << "failed to read canvas";
+            Error::BADREAD) << "failed to read canvas";
         x->property = std::move(canvas);
     } else if (::wcscmp(kind_name, L"Shape2D#Vector2D") == 0) {
         Vector vector;
 
         CHECK(p->i32_compressed(&vector.x),
-                Error::BADREAD) << "failed to read vector x";
+            Error::BADREAD) << "failed to read vector x";
         CHECK(p->i32_compressed(&vector.y),
-                Error::BADREAD) << "failed to read vector y";
+            Error::BADREAD) << "failed to read vector y";
         x->property = vector;
     } else if (::wcscmp(kind_name, L"Shape2D#Convex2D") == 0) {
         NamedPropertyContainer named_container;
 
         CHECK(NamedPropertyContainer::parse(&named_container, p, file_base),
-                Error::BADREAD) << "failed to read named property container";
+            Error::BADREAD) << "failed to read named property container";
         x->property = std::move(named_container);
     } else if (::wcscmp(kind_name, L"Sound_DX8") == 0) {
         const uint8_t* sound = p->address;
@@ -493,11 +493,11 @@ Error Property::parse_named(
 
         Uol uol;
         CHECK(String::parse_withoffset(&uol.uol, p, file_base),
-                Error::BADREAD) << "failed to read UOL";
+            Error::BADREAD) << "failed to read UOL";
         x->property = uol;
     } else
         return error_new(Error::UNKNOWNPROPERTYKINDNAME)
-            << "unknown named property kind name " << kind_name;
+        << "unknown named property kind name " << kind_name;
 
     return Error();
 }

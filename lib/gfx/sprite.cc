@@ -3,9 +3,9 @@
 namespace gfx {
 
 Error Sprite::Frame::load(
-        Sprite::Frame* self,
-        wz::Image image,
-        const uint8_t* image_data) {
+    Sprite::Frame* self,
+    wz::Image image,
+    const uint8_t* image_data) {
     self->image = image;
 
     glGenTextures(1, &self->texture);
@@ -15,22 +15,22 @@ Error Sprite::Frame::load(
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RGBA8,
-            image.width,
-            image.height,
-            0,
-            self->format(),
-            self->type(),
-            image_data);
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA8,
+        image.width,
+        image.height,
+        0,
+        self->format(),
+        self->type(),
+        image_data);
 
     return Error();
 }
 
 Error Sprite::Frame::loadfromfile(
-        Sprite::Frame* self,
-        const wz::OpenedFile::Node* node) {
+    Sprite::Frame* self,
+    const wz::OpenedFile::Node* node) {
     const auto canvas = std::get_if<wz::OpenedFile::Canvas>(&node->value);
     if (canvas == nullptr) {
         return error_new(Error::FRAMELOADFAILED)
@@ -38,10 +38,10 @@ Error Sprite::Frame::loadfromfile(
     }
 
     CHECK(load(
-                self,
-                canvas->image,
-                canvas->image_data),
-            Error::FRAMELOADFAILED)
+        self,
+        canvas->image,
+        canvas->image_data),
+        Error::FRAMELOADFAILED)
         << "failed to load frame from image data";
 
     // Read in origin and delay, if they exist. Errors here
@@ -51,9 +51,9 @@ Error Sprite::Frame::loadfromfile(
     self->delay = 100;
 
     node->childvector(
-            L"origin", &self->origin.x, &self->origin.y);
+        L"origin", &self->origin.x, &self->origin.y);
     node->childint32(
-            L"delay", &self->delay);
+        L"delay", &self->delay);
 
     if (self->delay < 0)
         self->delay = 0;
@@ -62,8 +62,8 @@ Error Sprite::Frame::loadfromfile(
 }
 
 void Sprite::Frame::quad(
-        Vector<int32_t> at,
-        gfx::Vertex vertices[4]) const {
+    Vector<int32_t> at,
+    gfx::Vertex vertices[4]) const {
     vertices[0].position[0] =
         static_cast<float>(at.x - origin.x);
     vertices[0].position[1] =
@@ -94,8 +94,8 @@ void Sprite::Frame::quad(
 }
 
 Error Sprite::loadfromfile(
-        Sprite* self,
-        const wz::OpenedFile::Node* node) {
+    Sprite* self,
+    const wz::OpenedFile::Node* node) {
     auto it = node->iterator();
 
     // TODO: are we guaranteed that sprite frames are in order?
@@ -117,9 +117,9 @@ Error Sprite::loadfromfile(
 
         Frame frame;
         CHECK(Frame::loadfromfile(
-                    &frame,
-                    frame_node),
-                Error::SPRITELOADFAILED)
+            &frame,
+            frame_node),
+            Error::SPRITELOADFAILED)
             << "failed to load sprite frame";
 
         self->frames.emplace_back(std::move(frame));

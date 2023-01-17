@@ -7,8 +7,8 @@
 namespace util {
 
 static inline Error convert(
-        const wchar_t* s,
-        int32_t* x) {
+    const wchar_t* s,
+    int32_t* x) {
     wchar_t* end = nullptr;
     *x = std::wcstol(s, &end, 10);
 
@@ -23,8 +23,8 @@ static inline Error convert(
 }
 
 static inline Error convert(
-        const wchar_t* s,
-        uint32_t* x) {
+    const wchar_t* s,
+    uint32_t* x) {
     wchar_t* end = nullptr;
     *x = std::wcstol(s, &end, 10);
 

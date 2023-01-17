@@ -15,8 +15,8 @@
 namespace client {
 
 static Error Map_Helper_load_portalkind(
-        ms::Map::Portal::Kind* kind,
-        const wchar_t* name) {
+    ms::Map::Portal::Kind* kind,
+    const wchar_t* name) {
     if (::wcscmp(name, L"sp") == 0) {
         *kind = ms::Map::Portal::STARTPOINT;
     } else if (::wcscmp(name, L"pi") == 0) {
@@ -53,11 +53,11 @@ static Error Map_Helper_load_portalkind(
     }
 
     return Error();
-} 
+}
 
 Error Map::Helper::load(
-        Map::Helper* self,
-        wz::Vfs::File::Handle&& map_helper_file) {
+    Map::Helper* self,
+    wz::Vfs::File::Handle&& map_helper_file) {
     self->map_helper_file = std::move(map_helper_file);
 
     const wz::OpenedFile::Node* portals_node =
@@ -80,18 +80,18 @@ Error Map::Helper::load(
     while ((portal = editors_it.next())) {
         ms::Map::Portal::Kind kind;
         CHECK(Map_Helper_load_portalkind(
-                    &kind,
-                    portal->name),
-                Error::MAP_LOAD_HELPERLOADFAILED)
+            &kind,
+            portal->name),
+            Error::MAP_LOAD_HELPERLOADFAILED)
             << "failed to determine editor portal kind";
 
         gfx::Sprite sprite;
 
         gfx::Sprite::Frame frame;
         CHECK(gfx::Sprite::Frame::loadfromfile(
-                    &frame,
-                    portal),
-                Error::MAP_LOAD_HELPERLOADFAILED)
+            &frame,
+            portal),
+            Error::MAP_LOAD_HELPERLOADFAILED)
             << "failed to load editor portal frame";
 
         sprite.frames.emplace_back(std::move(frame));
@@ -117,28 +117,28 @@ Error Map::Helper::load(
 
         gfx::Sprite pv_sprite;
         CHECK(gfx::Sprite::loadfromfile(
-                    &pv_sprite,
-                    pv_node),
-                Error::MAP_LOAD_HELPERLOADFAILED)
+            &pv_sprite,
+            pv_node),
+            Error::MAP_LOAD_HELPERLOADFAILED)
             << "failed to load pv sprite";
 
         self->portal_sprites.emplace(
-                ms::Map::Portal::VISIBLE,
-                std::move(pv_sprite));
+            ms::Map::Portal::VISIBLE,
+            std::move(pv_sprite));
     }
 
     return Error();
 }
 
 static Error TileSet_load(
-        wz::Vfs* map_vfs,
-        Map::TileSet* tileset,
-        const wchar_t* tileset_name_s,
-        Map::LoadResults* results) {
+    wz::Vfs* map_vfs,
+    Map::TileSet* tileset,
+    const wchar_t* tileset_name_s,
+    Map::LoadResults* results) {
     // Open the tileset file.
     wz::Vfs::File* tileset_file = map_vfs
         ->child(L"Tile")
-        .child(wz::Basename{tileset_name_s})
+        .child(wz::Basename{ tileset_name_s })
         .file();
     if (tileset_file == nullptr) {
         return error_new(Error::TILESET_LOAD_MISSINGFILE)
@@ -146,7 +146,7 @@ static Error TileSet_load(
     }
 
     CHECK(tileset_file->open(&tileset->tileset_file),
-            Error::OPENFAILED) << "failed to open tileset file";
+        Error::OPENFAILED) << "failed to open tileset file";
 
     auto group_it = tileset->tileset_file->iterator();
 
@@ -190,19 +190,19 @@ static Error TileSet_load(
 
             // Load the frame.
             CHECK(gfx::Sprite::Frame::load(
-                        &tile.frame,
-                        canvas->image,
-                        canvas->image_data),
-                    Error::TILESET_LOAD_FRAMELOADFAILED) << "failed to load tile frame";
+                &tile.frame,
+                canvas->image,
+                canvas->image_data),
+                Error::TILESET_LOAD_FRAMELOADFAILED) << "failed to load tile frame";
 
             CHECK(number->childvector(
-                        L"origin",
-                        &tile.frame.origin.x,
-                        &tile.frame.origin.y),
-                    Error::BACKGROUND_LOAD_MISSINGATTRIBUTES) << "failed to load frame origin";
+                L"origin",
+                &tile.frame.origin.x,
+                &tile.frame.origin.y),
+                Error::BACKGROUND_LOAD_MISSINGATTRIBUTES) << "failed to load frame origin";
 
             CHECK(number->childint32(L"z", &tile.z),
-                    Error::TILE_LOAD_MISSINGATTRIBUTES) << "missing or invalid z";
+                Error::TILE_LOAD_MISSINGATTRIBUTES) << "missing or invalid z";
 
             const Map::TileSet::Tile::Name name = {
                 .u = u,
@@ -216,15 +216,15 @@ static Error TileSet_load(
 }
 
 static Error ObjectSet_load(
-        client::Universe* universe,
-        wz::Vfs* map_vfs,
-        Map::ObjectSet* objectset,
-        const wchar_t* objectset_name_s,
-        Map::LoadResults* results) {
+    client::Universe* universe,
+    wz::Vfs* map_vfs,
+    Map::ObjectSet* objectset,
+    const wchar_t* objectset_name_s,
+    Map::LoadResults* results) {
     // Open the objectset file.
     wz::Vfs::File* objectset_file = map_vfs
         ->child(L"Obj")
-        .child(wz::Basename{objectset_name_s})
+        .child(wz::Basename{ objectset_name_s })
         .file();
     if (objectset_file == nullptr) {
         return error_new(Error::OBJECTSET_LOAD_MISSINGFILE)
@@ -232,7 +232,7 @@ static Error ObjectSet_load(
     }
 
     CHECK(objectset_file->open(&objectset->objectset_file),
-            Error::OPENFAILED) << "failed to open objectset file";
+        Error::OPENFAILED) << "failed to open objectset file";
 
     auto l0_it = objectset->objectset_file->iterator();
 
@@ -249,18 +249,18 @@ static Error ObjectSet_load(
                 gfx::Sprite sprite;
                 // Load the sprite.
                 CHECK(gfx::Sprite::loadfromfile(
-                            &sprite,
-                            l2),
-                        Error::OBJECTSET_LOAD_SPRITELOADFAILED) << "failed to load object gfx sprite: "
+                    &sprite,
+                    l2),
+                    Error::OBJECTSET_LOAD_SPRITELOADFAILED) << "failed to load object gfx sprite: "
                     << l0->name << "/" << l1->name << "/" << l2->name;
 
                 Map::ObjectSet::Object object;
 
                 CHECK(client::Sprite::init(
-                            &object.sprite,
-                            std::move(sprite),
-                            &universe->time),
-                        Error::OBJECTSET_LOAD_SPRITELOADFAILED) << "failed to load object sprite";
+                    &object.sprite,
+                    std::move(sprite),
+                    &universe->time),
+                    Error::OBJECTSET_LOAD_SPRITELOADFAILED) << "failed to load object sprite";
 
                 const Map::ObjectSet::Object::Name name = {
                     .l0 = l0->name,
@@ -276,12 +276,12 @@ static Error ObjectSet_load(
 }
 
 static Error Map_load_layer(
-        client::Universe* universe,
-        Map* self,
-        wz::Vfs* map_vfs,
-        Map::Layer* layer,
-        const wz::OpenedFile::Node* layer_node,
-        Map::LoadResults* results) {
+    client::Universe* universe,
+    Map* self,
+    wz::Vfs* map_vfs,
+    Map::Layer* layer,
+    const wz::OpenedFile::Node* layer_node,
+    Map::LoadResults* results) {
     // Load TileSet and tiles.
     const Map::TileSet* tileset = nullptr;
     do {
@@ -303,10 +303,10 @@ static Error Map_load_layer(
 
             // It's not necessarily a fatal error to fail to load a tileset.
             Error e = TileSet_load(
-                    map_vfs,
-                    &new_tileset,
-                    tileset_name_s,
-                    results);
+                map_vfs,
+                &new_tileset,
+                tileset_name_s,
+                results);
             if (e) {
                 // Record the failed load and move on.
                 if (results) {
@@ -340,11 +340,11 @@ static Error Map_load_layer(
                 Map::Layer::Tile tile;
                 Map::TileSet::Tile::Name name;
                 CHECK(tile_node->deserialize(
-                            L"u", &name.u,
-                            L"no", &name.no,
-                            L"x", &tile.position.x,
-                            L"y", &tile.position.y),
-                        Error::LAYER_LOAD_MISSINGATTRIBUTES) << "missing or invalid tile property";
+                    L"u", &name.u,
+                    L"no", &name.no,
+                    L"x", &tile.position.x,
+                    L"y", &tile.position.y),
+                    Error::LAYER_LOAD_MISSINGATTRIBUTES) << "missing or invalid tile property";
 
                 // Specifically ignore errors here.
                 int32_t zm = 0;
@@ -365,11 +365,11 @@ static Error Map_load_layer(
 
         // Sort tiles.
         std::sort(
-                layer->tiles.begin(),
-                layer->tiles.end(),
-                [](const Map::Layer::Tile& left, const Map::Layer::Tile& right) {
+            layer->tiles.begin(),
+            layer->tiles.end(),
+            [](const Map::Layer::Tile& left, const Map::Layer::Tile& right) {
                 return left.z < right.z;
-                });
+            });
     }
 
     // Load objects.
@@ -391,15 +391,15 @@ static Error Map_load_layer(
             const wchar_t* objectset_name_s = nullptr;
             Map::ObjectSet::Object::Name name;
             CHECK(object_node->deserialize(
-                        L"oS", &objectset_name_s,
-                        L"l0", &name.l0,
-                        L"l1", &name.l1,
-                        L"l2", &name.l2,
-                        L"x", &object.position.x,
-                        L"y", &object.position.y,
-                        L"z", &object.z,
-                        L"f", &object.f),
-                    Error::LAYER_LOAD_MISSINGATTRIBUTES)
+                L"oS", &objectset_name_s,
+                L"l0", &name.l0,
+                L"l1", &name.l1,
+                L"l2", &name.l2,
+                L"x", &object.position.x,
+                L"y", &object.position.y,
+                L"z", &object.z,
+                L"f", &object.f),
+                Error::LAYER_LOAD_MISSINGATTRIBUTES)
                 << "missing or invalid object attributes";
 
             const std::wstring objectset_name(objectset_name_s);
@@ -412,11 +412,11 @@ static Error Map_load_layer(
 
                 // It's not necessarily a fatal error to fail to load an objectset.
                 Error e = ObjectSet_load(
-                        universe,
-                        map_vfs,
-                        &new_objectset,
-                        objectset_name_s,
-                        results);
+                    universe,
+                    map_vfs,
+                    &new_objectset,
+                    objectset_name_s,
+                    results);
                 if (e) {
                     objectsets_missing.insert(objectset_name);
 
@@ -455,37 +455,37 @@ static Error Map_load_layer(
 
         // Sort objects.
         std::sort(
-                layer->objects.begin(),
-                layer->objects.end(),
-                [](const Map::Layer::Object& left, const Map::Layer::Object& right) {
+            layer->objects.begin(),
+            layer->objects.end(),
+            [](const Map::Layer::Object& left, const Map::Layer::Object& right) {
                 return left.z < right.z;
-                });
+            });
     }
 
     return Error();
 }
 
 static Error Map_load_background(
-        Map* self,
-        wz::Vfs* map_vfs,
-        Map::Background* background,
-        const wz::OpenedFile::Node* back_node) {
+    Map* self,
+    wz::Vfs* map_vfs,
+    Map::Background* background,
+    const wz::OpenedFile::Node* back_node) {
     int32_t kind_i = 0;
     const wchar_t* back_file_node_basename = nullptr;
     int32_t no = 0;
     CHECK(back_node->deserialize(
-                L"x", &background->position.x,
-                L"y", &background->position.y,
-                L"cx", &background->c.x,
-                L"cy", &background->c.y,
-                L"rx", &background->r.x,
-                L"ry", &background->r.y,
-                L"ani", &background->ani,
-                L"type", &kind_i,
-                L"front", &background->front,
-                L"bS", &back_file_node_basename,
-                L"no", &no),
-            Error::BACKGROUND_LOAD_MISSINGATTRIBUTES)
+        L"x", &background->position.x,
+        L"y", &background->position.y,
+        L"cx", &background->c.x,
+        L"cy", &background->c.y,
+        L"rx", &background->r.x,
+        L"ry", &background->r.y,
+        L"ani", &background->ani,
+        L"type", &kind_i,
+        L"front", &background->front,
+        L"bS", &back_file_node_basename,
+        L"no", &no),
+        Error::BACKGROUND_LOAD_MISSINGATTRIBUTES)
         << "missing or invalid background property";
 
     // Optional.
@@ -501,7 +501,7 @@ static Error Map_load_background(
     // Find the background file.
     wz::Vfs::File* back_file = map_vfs
         ->child(L"Back")
-        .child(wz::Basename{back_file_node_basename})
+        .child(wz::Basename{ back_file_node_basename })
         .file();
     if (back_file == nullptr) {
         return error_new(Error::BACKGROUND_LOAD_MISSINGFILE)
@@ -510,7 +510,7 @@ static Error Map_load_background(
 
     // Open the background file.
     CHECK(back_file->open(&background->background_file),
-            Error::OPENFAILED) << "failed to open back file";
+        Error::OPENFAILED) << "failed to open back file";
 
     // Load the background frame.
     std::wstring frame_node_name;
@@ -542,16 +542,16 @@ static Error Map_load_background(
     }
 
     CHECK(gfx::Sprite::Frame::load(
-                &background->frame,
-                canvas->image,
-                canvas->image_data),
-            Error::BACKGROUND_LOAD_FRAMELOADFAILED) << "failed to load frame";
+        &background->frame,
+        canvas->image,
+        canvas->image_data),
+        Error::BACKGROUND_LOAD_FRAMELOADFAILED) << "failed to load frame";
 
     CHECK(frame_node->childvector(
-                L"origin",
-                &background->frame.origin.x,
-                &background->frame.origin.y),
-            Error::BACKGROUND_LOAD_MISSINGATTRIBUTES) << "failed to load frame origin";
+        L"origin",
+        &background->frame.origin.x,
+        &background->frame.origin.y),
+        Error::BACKGROUND_LOAD_MISSINGATTRIBUTES) << "failed to load frame origin";
 
     if (background->c.x == 0) {
         background->c.x = background->frame.image.width;
@@ -564,11 +564,11 @@ static Error Map_load_background(
 }
 
 Error Map::load(
-        client::Universe* universe,
-        Map* self,
-        wz::Vfs* map_vfs,
-        wz::Vfs::File::Handle&& map_file,
-        Map::LoadResults* results) {
+    client::Universe* universe,
+    Map* self,
+    wz::Vfs* map_vfs,
+    wz::Vfs::File::Handle&& map_file,
+    Map::LoadResults* results) {
     self->map_file = std::move(map_file);
 
     self->time = universe->time.add<systems::Time::Component::Milliseconds>();
@@ -588,20 +588,20 @@ Error Map::load(
                 if (util::convert(back_node->name, &background.z)) {
                     if (results)
                         results->backgrounds_missing[back_node->name] =
-                            L"node name is not an integer";
+                        L"node name is not an integer";
                     continue;
                 }
 
                 // Load this background.
                 Error e = Map_load_background(
-                        self,
-                        map_vfs,
-                        &background,
-                        back_node);
+                    self,
+                    map_vfs,
+                    &background,
+                    back_node);
                 if (e) {
                     if (results)
                         results->backgrounds_missing[back_node->name] =
-                            e.str();
+                        e.str();
                     continue;
                 }
 
@@ -612,17 +612,17 @@ Error Map::load(
         } else {
             if (results)
                 results->backgrounds_missing[L"<all-backgrounds>"] =
-                    L"missing or invalid back node";
+                L"missing or invalid back node";
         }
     }
 
     // Backgrounds should be sorted in render order.
     std::sort(
-            self->backgrounds.begin(),
-            self->backgrounds.end(),
-            [](const Map::Background& b1, const Map::Background& b2) {
-                return b1.z < b2.z;
-                });
+        self->backgrounds.begin(),
+        self->backgrounds.end(),
+        [](const Map::Background& b1, const Map::Background& b2) {
+            return b1.z < b2.z;
+        });
 
     // Load layers.
     {
@@ -640,13 +640,13 @@ Error Map::load(
             Map::Layer layer;
             layer.index = i;
             CHECK(Map_load_layer(
-                        universe,
-                        self,
-                        map_vfs,
-                        &layer,
-                        layer_node,
-                        results),
-                    Error::MAP_LOAD_LAYERLOADFAILED) << "failed to load layer " << i;
+                universe,
+                self,
+                map_vfs,
+                &layer,
+                layer_node,
+                results),
+                Error::MAP_LOAD_LAYERLOADFAILED) << "failed to load layer " << i;
 
             self->layers.emplace_back(std::move(layer));
         }

@@ -37,7 +37,7 @@ struct OpenedFile {
             const Node* node;
 
             const Maybe child(
-                    const wchar_t* name) const {
+                const wchar_t* name) const {
                 if (node)
                     return node->child(name);
 
@@ -45,7 +45,7 @@ struct OpenedFile {
             }
 
             const Maybe child(
-                    const std::wstring& name) const {
+                const std::wstring& name) const {
                 return child(name.c_str());
             }
         };
@@ -74,7 +74,7 @@ struct OpenedFile {
         // children is a span of node indices in the containing OpenedFile's children
         // arena.
         struct {
-            uint32_t count { 0 };
+            uint32_t count{ 0 };
             Node* start;
         } children;
 
@@ -108,96 +108,96 @@ struct OpenedFile {
         }
 
         const Node* find(
-                const wchar_t* path) const;
+            const wchar_t* path) const;
 
         const Maybe child(
-                const wchar_t* name) const;
+            const wchar_t* name) const;
         const Maybe child(
-                const std::wstring& name) const {
+            const std::wstring& name) const {
             return child(name.c_str());
         }
 
         Error childint32(
-                const wchar_t* n,
-                int32_t* x) const;
+            const wchar_t* n,
+            int32_t* x) const;
         Error childvector(
-                const wchar_t* n,
-                int32_t* x,
-                int32_t* y) const;
+            const wchar_t* n,
+            int32_t* x,
+            int32_t* y) const;
         Error childstring(
-                const wchar_t* n,
-                const wchar_t** x) const;
+            const wchar_t* n,
+            const wchar_t** x) const;
 
         template <typename S, typename T, typename... Args>
-            Error deserialize(
-                    S name,
-                    T destination,
-                    Args... rest) const {
-                static_assert(std::is_same<S, const wchar_t*>::value, "name must be const wchar_t*");
+        Error deserialize(
+            S name,
+            T destination,
+            Args... rest) const {
+            static_assert(std::is_same<S, const wchar_t*>::value, "name must be const wchar_t*");
 
-                constexpr size_t count = (sizeof...(rest) / 2) + 1;
-                bool found[count] = {false};
+            constexpr size_t count = (sizeof...(rest) / 2) + 1;
+            bool found[count] = { false };
 
-                for (uint32_t i = 0, l = children.count; i < l; ++i) {
-                    if (Error e = (deserialize_match<S, T, Args...>(
-                                    found,
-                                    &children.start[i],
-                                    name,
-                                    destination,
-                                    rest...))) {
-                        return error_push(e, Error::WZ_DESERIALIZE_FAILED)
-                            << "failed to deserialize node value";
-                    }
+            for (uint32_t i = 0, l = children.count; i < l; ++i) {
+                if (Error e = (deserialize_match<S, T, Args...>(
+                    found,
+                    &children.start[i],
+                    name,
+                    destination,
+                    rest...))) {
+                    return error_push(e, Error::WZ_DESERIALIZE_FAILED)
+                        << "failed to deserialize node value";
                 }
-
-                for (size_t i = 0; i < count; ++i) {
-                    if (!found[i]) {
-                        return error_new(Error::WZ_DESERIALIZE_FAILED)
-                            << "not all node values were deserialized";
-                    }
-                }
-
-                return Error();
             }
 
-        private:
+            for (size_t i = 0; i < count; ++i) {
+                if (!found[i]) {
+                    return error_new(Error::WZ_DESERIALIZE_FAILED)
+                        << "not all node values were deserialized";
+                }
+            }
+
+            return Error();
+        }
+
+    private:
 
         template <typename... Args>
-            static Error deserialize_match(
-                    bool* found,
-                    const wz::OpenedFile::Node* child) {
+        static Error deserialize_match(
+            bool* found,
+            const wz::OpenedFile::Node* child) {
+            return Error();
+        }
+
+        template <typename S, typename T, typename... Args>
+        static Error deserialize_match(
+            bool* found,
+            const wz::OpenedFile::Node* child,
+            S name,
+            T destination,
+            Args... rest) {
+            static_assert(std::is_same<S, const wchar_t*>::value, "name must be const wchar_t*");
+
+            if (wcscmp(name, child->name) == 0) {
+                CHECK(deserialize_into(
+                    child,
+                    destination),
+                    Error::WZ_DESERIALIZE_FAILED)
+                    << "failed to deserialize node value: " << name;
+
+                *found = true;
                 return Error();
             }
 
-        template <typename S, typename T, typename... Args>
-            static Error deserialize_match(
-                    bool* found,
-                    const wz::OpenedFile::Node* child,
-                    S name,
-                    T destination,
-                    Args... rest) {
-                static_assert(std::is_same<S, const wchar_t*>::value, "name must be const wchar_t*");
-
-                if (wcscmp(name, child->name) == 0) {
-                    CHECK(deserialize_into(
-                                child,
-                                destination),
-                            Error::WZ_DESERIALIZE_FAILED)
-                        << "failed to deserialize node value: " << name;
-
-                    *found = true;
-                    return Error();
-                }
-
-                return deserialize_match<Args...>(
-                        found + 1,
-                        child,
-                        rest...);
-            }
+            return deserialize_match<Args...>(
+                found + 1,
+                child,
+                rest...);
+        }
 
         static Error deserialize_into(
-                const wz::OpenedFile::Node* node,
-                const wchar_t** destination) {
+            const wz::OpenedFile::Node* node,
+            const wchar_t** destination) {
             if (const String* s = std::get_if<String>(&node->value)) {
                 *destination = s->string;
             } else {
@@ -209,8 +209,8 @@ struct OpenedFile {
         }
 
         static Error deserialize_into(
-                const wz::OpenedFile::Node* node,
-                int32_t* destination) {
+            const wz::OpenedFile::Node* node,
+            int32_t* destination) {
             if (const int32_t* i = std::get_if<int32_t>(&node->value)) {
                 *destination = *i;
             } else {
@@ -233,16 +233,16 @@ struct OpenedFile {
     std::vector<Node> nodes;
 
     static Error open(
-            const wz::Wz* wz,
-            OpenedFile* of,
-            const wz::File* f);
+        const wz::Wz* wz,
+        OpenedFile* of,
+        const wz::File* f);
 
     Node::Iterator iterator() const {
         return nodes[0].iterator();
     }
 
     const Node* find(
-            const wchar_t* path) const {
+        const wchar_t* path) const {
         return nodes[0].find(path);
     }
 
@@ -284,7 +284,7 @@ struct Vfs {
                 return opened_file.get();
             }
 
-            operator const OpenedFile*() const {
+            operator const OpenedFile* () const {
                 return opened_file.get();
             }
 
@@ -301,10 +301,10 @@ struct Vfs {
         };
 
         Error open(Handle* h) {
-            if (rc == (uint32_t) 0) {
+            if (rc == (uint32_t)0) {
                 opened.reset(new OpenedFile());
                 CHECK(OpenedFile::open(wz.get(), opened.get(), &file),
-                        Error::OPENFAILED) << "failed to open file";
+                    Error::OPENFAILED) << "failed to open file";
             }
 
             if (h) {
@@ -316,11 +316,11 @@ struct Vfs {
         }
 
         void close() {
-            if (rc == (uint32_t) 0)
+            if (rc == (uint32_t)0)
                 throw "double closed file";
 
             --rc;
-            if (rc == (uint32_t) 0)
+            if (rc == (uint32_t)0)
                 opened.reset();
         }
 
@@ -335,12 +335,12 @@ struct Vfs {
             using hash_type = std::hash<std::wstring_view>;
             using is_transparent = void;
 
-            std::size_t operator()(const wchar_t* str) const { return operator()(std::wstring_view{str}); }
-            std::size_t operator()(std::wstring const& str) const { return operator()((std::wstring_view) str); }
+            std::size_t operator()(const wchar_t* str) const { return operator()(std::wstring_view{ str }); }
+            std::size_t operator()(std::wstring const& str) const { return operator()((std::wstring_view)str); }
             std::size_t operator()(std::wstring_view str) const {
                 if (str.ends_with(L".img")) {
                     str.remove_suffix(4);
-                    return operator()(Basename{str});
+                    return operator()(Basename{ str });
                 }
 
                 return hash_type{}(str);
@@ -420,13 +420,13 @@ struct Vfs {
             File> contents;
 
         const Maybe child(
-                const wchar_t* name);
+            const wchar_t* name);
         const Maybe child(
-                const std::wstring& name) {
+            const std::wstring& name) {
             return child(name.c_str());
         }
         const Maybe child(
-                const Basename& b);
+            const Basename& b);
 
         Directory* directory() {
             return std::get_if<Directory>(&contents);
@@ -453,31 +453,31 @@ struct Vfs {
     Node root;
 
     static Error opennamed(
-            Vfs* vfs,
-            const wz::Wz* wz,
-            std::wstring&& name);
+        Vfs* vfs,
+        const wz::Wz* wz,
+        std::wstring&& name);
 
     static Error open(
-            Vfs* vfs,
-            const wz::Wz* wz) {
+        Vfs* vfs,
+        const wz::Wz* wz) {
         return opennamed(
-                vfs,
-                wz,
-                L"");
+            vfs,
+            wz,
+            L"");
     }
 
     Node* find(const wchar_t* path);
 
     const Node::Maybe child(
-            const wchar_t* name) {
+        const wchar_t* name) {
         return root.child(name);
     }
     const Node::Maybe child(
-            const std::wstring& name) {
+        const std::wstring& name) {
         return root.child(name);
     }
     const Node::Maybe child(
-            const Basename& b) {
+        const Basename& b) {
         return root.child(b);
     }
 

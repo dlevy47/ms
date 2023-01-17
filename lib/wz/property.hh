@@ -23,12 +23,12 @@ struct String {
     Error decrypt(wchar_t* s) const;
 
     static Error parse(
-            String* s,
-            Parser* p);
+        String* s,
+        Parser* p);
     static Error parse_withoffset(
-            String* s,
-            Parser* p,
-            const uint8_t* file_base);
+        String* s,
+        Parser* p,
+        const uint8_t* file_base);
 };
 
 struct Image {
@@ -46,18 +46,18 @@ struct Image {
     // Buffers passed to pixels should be at least this big, in bytes.
     uint32_t rawsize() const {
         switch (format + format2) {
-            case 1:
-                // BGRA8.
-                return width * height * 4;
-            case 2:
-                // BGRA8.
-                return width * height * 4;
-            case 513:
-                // BGR 5_6_5_REV (or, RGB 5_6_5)
-                return width * height * 2;
-            case 517:
-                // BGR 5_6_5_REV?
-                return width * height * 2;
+        case 1:
+            // BGRA8.
+            return width * height * 4;
+        case 2:
+            // BGRA8.
+            return width * height * 4;
+        case 513:
+            // BGR 5_6_5_REV (or, RGB 5_6_5)
+            return width * height * 2;
+        case 517:
+            // BGR 5_6_5_REV?
+            return width * height * 2;
         }
 
         // TODO: handle errors here?
@@ -72,18 +72,18 @@ struct Image {
     // a guess about valid zlib headers.
     bool is_encrypted() const {
         return length > 2 && !(
-                (data[0] == 0x78 && data[1] == 0x9C) ||
-                (data[0] == 0x78 && data[1] == 0xDA) ||
-                (data[0] == 0x78 && data[1] == 0x01) ||
-                (data[0] == 0x78 && data[1] == 0x5E));
+            (data[0] == 0x78 && data[1] == 0x9C) ||
+            (data[0] == 0x78 && data[1] == 0xDA) ||
+            (data[0] == 0x78 && data[1] == 0x01) ||
+            (data[0] == 0x78 && data[1] == 0x5E));
     }
 
     static Error parse(
-            Image* x,
-            Parser* p);
+        Image* x,
+        Parser* p);
 };
 
-template <typename T, Error (*P) (T*, Parser*, const uint8_t*)>
+template <typename T, Error(*P) (T*, Parser*, const uint8_t*)>
 struct Container {
     struct Iterator {
         uint32_t remaining;
@@ -118,15 +118,15 @@ struct Container {
     }
 
     static Error parse(
-            Container* c,
-            Parser* p,
-            const uint8_t* file_base) {
+        Container* c,
+        Parser* p,
+        const uint8_t* file_base) {
         int32_t count = 0;
         CHECK(p->i32_compressed(&count),
-                Error::BADREAD) << "failed to read child count";
+            Error::BADREAD) << "failed to read child count";
         if (count < 0)
             return error_new(Error::BADREAD)
-                << "read negative child count" << count;
+            << "read negative child count" << count;
         c->count = count;
         c->first = p->address;
         c->file_base = file_base;
@@ -146,9 +146,9 @@ struct Canvas {
     Container<Property, Property_parse> children;
 
     static Error parse(
-            Canvas* x,
-            Parser* p,
-            const uint8_t* file_base);
+        Canvas* x,
+        Parser* p,
+        const uint8_t* file_base);
 };
 
 struct Vector {
@@ -181,14 +181,14 @@ struct Property {
         Uol> property;
 
     static Error parse(
-            Property* x,
-            Parser* p,
-            const uint8_t* file_base);
+        Property* x,
+        Parser* p,
+        const uint8_t* file_base);
     static Error parse_named(
-            Property* x,
-            Parser* p,
-            const uint8_t* file_base,
-            const String* name = nullptr);
+        Property* x,
+        Parser* p,
+        const uint8_t* file_base,
+        const String* name = nullptr);
 };
 
 inline Error Property_parse(Property* p, Parser* parser, const uint8_t* file_base) {

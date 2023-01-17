@@ -46,7 +46,7 @@ struct Demo {
     client::renderer::MapState map_state_renderer;
 
     // map_state_renderer_options contains the draw options for the map state.
-    client::renderer::MapState::Options map_state_options {
+    client::renderer::MapState::Options map_state_options{
         .debug = {
             .bounding_box = true,
             .footholds = true,
@@ -63,17 +63,17 @@ struct Demo {
     nk::Ui ui;
 
     struct {
-        char map_name[256] { 0 };
+        char map_name[256]{ 0 };
     } ui_state;
 
     Error load_map(
-            ms::Map::ID map_id);
+        ms::Map::ID map_id);
 
     Error draw_ui(gl::Window* window);
 
     static Error init(
-            Demo* self,
-            const std::filesystem::path& dataset_path,
-            uint64_t now,
-            gfx::Vector<int32_t> window_size);
+        Demo* self,
+        const std::filesystem::path& dataset_path,
+        uint64_t now,
+        gfx::Vector<int32_t> window_size);
 };

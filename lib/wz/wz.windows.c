@@ -2,9 +2,9 @@
 #include <windows.h>
 
 int _wz_openfileforread(
-        int* handle_out,
-        size_t* size_out,
-        const char* filename) {
+	int* handle_out,
+	size_t* size_out,
+	const char* filename) {
 	HANDLE fh = CreateFileA(
 		filename,
 		GENERIC_READ,
@@ -17,35 +17,35 @@ int _wz_openfileforread(
 		return GetLastError();
 	}
 
-	LARGE_INTEGER size = {0};
+	LARGE_INTEGER size = { 0 };
 	if (GetFileSizeEx(fh, &size) == 0) {
 		DWORD e = GetLastError();
 		CloseHandle(fh);
 		return e;
 	}
 
-	*handle_out = (int) fh;
-	*size_out = (size_t) size.QuadPart;
+	*handle_out = (int)fh;
+	*size_out = (size_t)size.QuadPart;
 	return 0;
 }
 
 int _wz_closefile(
-        int handle) {
-    if (CloseHandle((HANDLE) handle) == 0) {
-        return GetLastError();
-    }
+	int handle) {
+	if (CloseHandle((HANDLE)handle) == 0) {
+		return GetLastError();
+	}
 
-    return 0;
+	return 0;
 }
 
 int _wz_mapfile(
-        const void** addr_out,
-        int handle,
-        size_t length) {
+	const void** addr_out,
+	int handle,
+	size_t length) {
 	DWORD size_low = length & 0xFFFFFFFF;
 	DWORD size_high = (length & 0xFFFFFFFF00000000) >> 32;
 	HANDLE mapping = CreateFileMappingA(
-		(HANDLE) handle,
+		(HANDLE)handle,
 		NULL,
 		PAGE_READONLY,
 		size_high,
@@ -65,16 +65,16 @@ int _wz_mapfile(
 		return GetLastError();
 	}
 
-    *addr_out = addr;
-    return 0;
+	*addr_out = addr;
+	return 0;
 }
 
 int _wz_unmapfile(
-        const void* addr,
-        size_t length) {
+	const void* addr,
+	size_t length) {
 	if (UnmapViewOfFile(addr) == 0) {
 		return GetLastError();
 	}
 
-    return 0;
+	return 0;
 }

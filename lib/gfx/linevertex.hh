@@ -9,8 +9,8 @@ struct LineVertex {
     float color[4];
 
     static Error configure(
-            const gl::Program<LineVertex>* program,
-            const gl::Drawable<LineVertex>* drawable);
+        const gl::Program<LineVertex>* program,
+        const gl::Drawable<LineVertex>* drawable);
 };
 
 }

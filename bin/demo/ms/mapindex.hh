@@ -19,7 +19,7 @@ struct MapIndex {
 
     // name returns the name of the map with the specified ID, if there is one.
     inline const wchar_t* name(
-            ms::Map::ID id) const {
+        ms::Map::ID id) const {
         auto it = id_to_name.find(id);
         if (it == id_to_name.end()) {
             return nullptr;
@@ -34,11 +34,11 @@ struct MapIndex {
     // the map name. That is, if the keyword appears at the beginning of the map name, it
     // is considered to be more relevant than if the keyword appears later.
     std::vector<ms::Map::ID> search(
-            const wchar_t* name) const;
+        const wchar_t* name) const;
 
     static Error load(
-            MapIndex* self,
-            wz::Vfs::File::Handle&& map_file);
+        MapIndex* self,
+        wz::Vfs::File::Handle&& map_file);
 
     MapIndex() = default;
     MapIndex(const MapIndex&) = delete;

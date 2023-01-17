@@ -39,14 +39,14 @@ struct EntryContainer {
     }
 
     static Error parse(
-            EntryContainer* c,
-            Parser* p) {
+        EntryContainer* c,
+        Parser* p) {
         int32_t count = 0;
         CHECK(p->i32_compressed(&count),
-                Error::BADREAD) << "failed to read child count";
+            Error::BADREAD) << "failed to read child count";
         if (count < 0)
             return error_new(Error::BADREAD)
-                << "read negative child count" << count;
+            << "read negative child count" << count;
         c->count = count;
         c->first = p->address;
 
@@ -59,16 +59,16 @@ struct File {
     PropertyContainer root;
 
     static Error parse(
-            File* f,
-            Parser* p);
+        File* f,
+        Parser* p);
 };
 
 struct Directory {
     EntryContainer children;
 
     static Error parse(
-            Directory* d,
-            Parser* p);
+        Directory* d,
+        Parser* p);
 };
 
 struct Entry {
@@ -98,8 +98,8 @@ struct Entry {
         Directory> entry;
 
     static Error parse(
-            Entry* into,
-            Parser* p);
+        Entry* into,
+        Parser* p);
 };
 
 }

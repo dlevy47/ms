@@ -26,8 +26,8 @@ struct Renderer {
         P<Renderer> that;
 
         struct Metrics {
-            size_t draw_calls { 0 };
-            size_t quads { 0 };
+            size_t draw_calls{ 0 };
+            size_t quads{ 0 };
             std::unordered_map<GLuint, std::monostate> seen_textures;
 
             size_t textures() const {
@@ -73,53 +73,53 @@ struct Renderer {
         // frame draws a textured quad, placed so that its origin is at the
         // specified location (in game coordinates).
         Error frame(
-                const gfx::Sprite::Frame* frame,
-                const gfx::Vector<int32_t> at);
+            const gfx::Sprite::Frame* frame,
+            const gfx::Vector<int32_t> at);
 
         struct LineOptions {
-            float width { 2 };
+            float width{ 2 };
             struct {
-                uint8_t r { 0xFF };
-                uint8_t g { 0x00 };
-                uint8_t b { 0xFF };
-                uint8_t a { 0xFF };
+                uint8_t r{ 0xFF };
+                uint8_t g{ 0x00 };
+                uint8_t b{ 0xFF };
+                uint8_t a{ 0xFF };
             } color;
         };
 
         inline void line(
-                const gfx::Vector<int32_t> start,
-                const gfx::Vector<int32_t> end) {
+            const gfx::Vector<int32_t> start,
+            const gfx::Vector<int32_t> end) {
             line_withoptions(
-                    start,
-                    end,
-                    LineOptions());
+                start,
+                end,
+                LineOptions());
         }
 
         void line_withoptions(
-                const gfx::Vector<int32_t> start,
-                const gfx::Vector<int32_t> end,
-                const LineOptions options);
+            const gfx::Vector<int32_t> start,
+            const gfx::Vector<int32_t> end,
+            const LineOptions options);
 
         inline void rect(
-                const gfx::Rect<int32_t> r) {
+            const gfx::Rect<int32_t> r) {
             rect_withoptions(
-                    r,
-                    LineOptions());
+                r,
+                LineOptions());
         }
 
         void rect_withoptions(
-                const gfx::Rect<int32_t> r,
-                const LineOptions options);
+            const gfx::Rect<int32_t> r,
+            const LineOptions options);
 
         ~Target() {
             // TODO: If some kind of caching/queuing system is built, flush here.
             if (lines.ebo.size() && lines.vbo.size()) {
                 that->line_drawable.ebo_load(
-                        lines.ebo.data(),
-                        lines.ebo.size());
+                    lines.ebo.data(),
+                    lines.ebo.size());
                 that->line_drawable.vbo_load(
-                        lines.vbo.data(),
-                        lines.vbo.size());
+                    lines.vbo.data(),
+                    lines.vbo.size());
 
                 glUseProgram(that->line_program.program);
                 glBindVertexArray(that->line_drawable.vao);
@@ -127,10 +127,10 @@ struct Renderer {
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, that->line_drawable.ebo);
 
                 glDrawElements(
-                        that->line_drawable.vbo_mode,
-                        lines.ebo.size(),
-                        that->line_drawable.ebo_type,
-                        nullptr);
+                    that->line_drawable.vbo_mode,
+                    lines.ebo.size(),
+                    that->line_drawable.ebo_type,
+                    nullptr);
             }
         }
 
@@ -148,13 +148,13 @@ struct Renderer {
     gl::Program<gfx::LineVertex> line_program;
 
     static Error init(
-            Renderer* that);
+        Renderer* that);
 
     // begin starts a new render session and returns a Target to render to.
     // viewport provides, in game coordinates, the part of the scene to show.
     Target begin(
-            gl::Window::Frame* target,
-            gfx::Rect<double> viewport);
+        gl::Window::Frame* target,
+        gfx::Rect<double> viewport);
 
     Renderer() = default;
     Renderer(Renderer&&) = default;

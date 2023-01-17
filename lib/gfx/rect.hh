@@ -17,8 +17,8 @@ struct Rect {
     template <typename U>
     bool contains(Vector<U> p) const {
         return (
-                (p.x >= topleft.x && p.x <= bottomright.x) &&
-                (p.y >= topleft.y && p.y <= bottomright.y));
+            (p.x >= topleft.x && p.x <= bottomright.x) &&
+            (p.y >= topleft.y && p.y <= bottomright.y));
     }
 
     template <typename U>
@@ -88,7 +88,7 @@ struct Rect {
     explicit operator Rect<U>() const {
         return Rect<U> {
             .topleft = static_cast<Vector<U>>(topleft),
-            .bottomright = static_cast<Vector<U>>(bottomright),
+                .bottomright = static_cast<Vector<U>>(bottomright),
         };
     }
 

@@ -55,11 +55,11 @@ struct MapState {
     };
 
     static Error init(
-            MapState* state,
-            ms::Map&& basemap);
+        MapState* state,
+        ms::Map&& basemap);
 
     Error apply(
-            const Update::List* updates);
+        const Update::List* updates);
 };
 
 }

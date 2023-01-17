@@ -27,8 +27,8 @@ struct Map {
         std::unordered_map<ms::Map::Portal::Kind, gfx::Sprite> portal_sprites;
 
         static Error load(
-                Helper* self,
-                wz::Vfs::File::Handle&& map_helper_file);
+            Helper* self,
+            wz::Vfs::File::Handle&& map_helper_file);
 
         Helper() = default;
         Helper(const Helper&) = delete;
@@ -95,8 +95,8 @@ struct Map {
 
                 bool operator==(const Name& rhs) const {
                     return (::wcscmp(l0, rhs.l0) == 0 &&
-                            ::wcscmp(l1, rhs.l1) == 0 &&
-                            ::wcscmp(l2, rhs.l2) == 0);
+                        ::wcscmp(l1, rhs.l1) == 0 &&
+                        ::wcscmp(l2, rhs.l2) == 0);
                 }
             };
 
@@ -207,7 +207,7 @@ struct Map {
         bool empty() const {
             return
                 backgrounds_missing.size() == 0 &&
-                tilesets_missing.size() == 0 && 
+                tilesets_missing.size() == 0 &&
                 tiles_missing.size() == 0 &&
                 objectsets_missing.size() == 0 &&
                 objects_missing.size() == 0;
@@ -219,11 +219,11 @@ struct Map {
     // the load will still continue). Instead, they are reported in the LoadResults,
     // if a pointer to one has been provided.
     static Error load(
-            client::Universe* universe,
-            Map* self,
-            wz::Vfs* map_vfs,
-            wz::Vfs::File::Handle&& map_file,
-            LoadResults* results);
+        client::Universe* universe,
+        Map* self,
+        wz::Vfs* map_vfs,
+        wz::Vfs::File::Handle&& map_file,
+        LoadResults* results);
 
     Map() = default;
     Map(const Map&) = delete;

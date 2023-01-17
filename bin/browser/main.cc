@@ -21,17 +21,17 @@ Error main_(const std::vector<std::string>& args) {
     glfwSetErrorCallback(glfw_errorcallback);
 
     CHECK(gl::init(),
-            Error::UIERROR) << "failed to initialize gl";
+        Error::UIERROR) << "failed to initialize gl";
 
     Browser browser;
     CHECK(Browser::init(
-                &browser,
-                args,
-                "WZ browser"),
-            Error::UIERROR) << "failed to initialize Browser";
+        &browser,
+        args,
+        "WZ browser"),
+        Error::UIERROR) << "failed to initialize Browser";
 
     CHECK(browser.run(),
-            Error::UIERROR) << "failed to run Browser";
+        Error::UIERROR) << "failed to run Browser";
 
     glfwTerminate();
     return Error();

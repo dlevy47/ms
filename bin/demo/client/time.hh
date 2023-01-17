@@ -12,12 +12,12 @@ struct Time {
     float to_float() const {
         return
             static_cast<float>(seconds) + (
-                    static_cast<float>(microseconds) / 1000000);
+                static_cast<float>(microseconds) / 1000000);
     }
     double to_double() const {
         return
             static_cast<double>(seconds) + (
-                    static_cast<double>(microseconds) / 1000000);
+                static_cast<double>(microseconds) / 1000000);
     }
 
     uint64_t to_milliseconds() const {

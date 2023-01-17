@@ -6,31 +6,31 @@
 namespace nk {
 
 Error Vertex::configure(
-        const gl::Program<Vertex>* program,
-        const gl::Drawable<Vertex>* drawable) {
+    const gl::Program<Vertex>* program,
+    const gl::Drawable<Vertex>* drawable) {
     glBindVertexArray(drawable->vao);
     glBindBuffer(GL_ARRAY_BUFFER, drawable->vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, drawable->ebo);
 
     GLuint position = 0;
     CHECK(program->attribute(
-                "position",
-                &position),
-            Error::GLERROR)
+        "position",
+        &position),
+        Error::GLERROR)
         << "failed to configure program";
 
     GLuint uv = 0;
     CHECK(program->attribute(
-                "uv",
-                &uv),
-            Error::GLERROR)
+        "uv",
+        &uv),
+        Error::GLERROR)
         << "failed to configure program";
 
     GLuint color = 0;
     CHECK(program->attribute(
-                "color",
-                &color),
-            Error::GLERROR)
+        "color",
+        &color),
+        Error::GLERROR)
         << "failed to configure program";
 
     glEnableVertexAttribArray(position);
@@ -43,35 +43,35 @@ Error Vertex::configure(
     size_t color_offset = offsetof(Vertex, color);
 
     glVertexAttribPointer(
-            position,
-            2,
-            GL_FLOAT,
-            GL_FALSE,
-            stride,
-            reinterpret_cast<void*>(position_offset));
+        position,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        stride,
+        reinterpret_cast<void*>(position_offset));
     glVertexAttribPointer(
-            uv,
-            2,
-            GL_FLOAT,
-            GL_FALSE,
-            stride,
-            reinterpret_cast<void*>(uv_offset));
+        uv,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        stride,
+        reinterpret_cast<void*>(uv_offset));
     glVertexAttribPointer(
-            color,
-            4,
-            GL_UNSIGNED_BYTE,
-            GL_TRUE,
-            stride,
-            reinterpret_cast<void*>(color_offset));
+        color,
+        4,
+        GL_UNSIGNED_BYTE,
+        GL_TRUE,
+        stride,
+        reinterpret_cast<void*>(color_offset));
 
     return Error();
 }
 
 Error Program::init(
-        Program* self) {
+    Program* self) {
     LOG(Logger::INFO) << "compiling shaders";
     gl::Program<Vertex>::CompileOptions compile_options;
-    compile_options.vertex_shader = 
+    compile_options.vertex_shader =
         "#version 330\n"
         "uniform mat4 projection;\n"
         "in vec2 position;\n"
@@ -97,34 +97,34 @@ Error Program::init(
         "}\n";
 
     CHECK(gl::Program<Vertex>::compileandlink(
-                &self->program,
-                &compile_options),
-            Error::UIERROR) << "failed to compile render program";
+        &self->program,
+        &compile_options),
+        Error::UIERROR) << "failed to compile render program";
 
     LOG(Logger::INFO) << "shaders compiled";
     return Error();
 }
 
 void Ui::input(
-        gl::Window* window,
-        bool keys) {
+    gl::Window* window,
+    bool keys) {
     nk_input_begin(context); {
-        double this_mouse_position[2] = {0};
+        double this_mouse_position[2] = { 0 };
         glfwGetCursorPos(
-                window->window.get(),
-                &this_mouse_position[0],
-                &this_mouse_position[1]);
+            window->window.get(),
+            &this_mouse_position[0],
+            &this_mouse_position[1]);
 
         nk_input_motion(
-                context,
-                (int) this_mouse_position[0],
-                (int) this_mouse_position[1]);
+            context,
+            (int)this_mouse_position[0],
+            (int)this_mouse_position[1]);
         nk_input_button(
-                context,
-                NK_BUTTON_LEFT,
-                (int) this_mouse_position[0],
-                (int) this_mouse_position[1],
-                glfwGetMouseButton(window->window.get(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
+            context,
+            NK_BUTTON_LEFT,
+            (int)this_mouse_position[0],
+            (int)this_mouse_position[1],
+            glfwGetMouseButton(window->window.get(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
 
         if (window->scroll.available) {
             std::cout
@@ -153,18 +153,18 @@ void Ui::input(
 
                 enum nk_keys nk_key = NK_KEY_NONE;
                 switch (keypress.key) {
-                    case GLFW_KEY_BACKSPACE:
-                        nk_key = NK_KEY_BACKSPACE;
-                        break;
-                    default:
-                        break;
+                case GLFW_KEY_BACKSPACE:
+                    nk_key = NK_KEY_BACKSPACE;
+                    break;
+                default:
+                    break;
                 }
 
                 if (nk_key != NK_KEY_NONE) {
                     nk_input_key(
-                            context,
-                            nk_key,
-                            keypress.action == GLFW_RELEASE ? 0 : 1);
+                        context,
+                        nk_key,
+                        keypress.action == GLFW_RELEASE ? 0 : 1);
                 }
 
                 window->keys.pop();
@@ -175,15 +175,15 @@ void Ui::input(
 }
 
 static Error Ui_init_fonts(
-        Ui* self,
-        nk_font** font_out) {
+    Ui* self,
+    nk_font** font_out) {
     LOG(Logger::INFO)
         << "loading fonts";
 
     GLuint font_texture = 0;
     nk_font* font = nullptr;
 
-    struct nk_font_atlas atlas_ = {0};
+    struct nk_font_atlas atlas_ = { 0 };
     nk_font_atlas_init(&atlas_, &nk::Allocator);
     self->atlas.set(atlas_);
     {
@@ -195,24 +195,24 @@ static Error Ui_init_fonts(
         font = nk_font_atlas_add_default(self->atlas, 13, nullptr);
 
         const void* img = nk_font_atlas_bake(
-                self->atlas,
-                &img_width,
-                &img_height,
-                NK_FONT_ATLAS_RGBA32);
+            self->atlas,
+            &img_width,
+            &img_height,
+            NK_FONT_ATLAS_RGBA32);
 
         glBindTexture(GL_TEXTURE_2D, font_texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         glTexImage2D(
-                GL_TEXTURE_2D, 0, GL_RGBA,
-                (GLsizei) img_width, (GLsizei) img_height, 0,
-                GL_RGBA, GL_UNSIGNED_BYTE, img);
+            GL_TEXTURE_2D, 0, GL_RGBA,
+            (GLsizei)img_width, (GLsizei)img_height, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, img);
 
         nk_font_atlas_end(
-                self->atlas,
-                nk_handle_id((int) font_texture),
-                &self->null_texture);
+            self->atlas,
+            nk_handle_id((int)font_texture),
+            &self->null_texture);
     }
     LOG(Logger::INFO)
         << "fonts loaded";
@@ -222,12 +222,12 @@ static Error Ui_init_fonts(
 }
 
 Error Ui::init(
-        Ui* self) {
+    Ui* self) {
     nk_font* font = nullptr;
     CHECK(Ui_init_fonts(self, &font),
-            Error::UIERROR) << "failed to initialize fonts";
+        Error::UIERROR) << "failed to initialize fonts";
 
-    struct nk_context context_ = {0};
+    struct nk_context context_ = { 0 };
     if (!nk_init(&context_, &nk::Allocator, &font->handle)) {
         return error_new(Error::UIERROR)
             << "failed to initialize nk context";

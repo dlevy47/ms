@@ -6,8 +6,8 @@ namespace client {
 namespace game {
 
 Error Renderer::Target::frame(
-        const gfx::Sprite::Frame* frame,
-        const gfx::Vector<int32_t> at) {
+    const gfx::Sprite::Frame* frame,
+    const gfx::Vector<int32_t> at) {
     ++metrics.quads;
     metrics.seen_textures[frame->texture] = std::monostate();
 
@@ -15,12 +15,12 @@ Error Renderer::Target::frame(
     // submit to a draw chain.
     that->program.projection(projection);
 
-    const uint8_t ebo[6] = {0, 1, 3, 1, 2, 3};
+    const uint8_t ebo[6] = { 0, 1, 3, 1, 2, 3 };
     that->drawable.ebo_load(
-            ebo,
-            sizeof(ebo) / sizeof(*ebo));
+        ebo,
+        sizeof(ebo) / sizeof(*ebo));
 
-    gfx::Vertex quad[4] = {{0}};
+    gfx::Vertex quad[4] = { {0} };
 
     gfx::Vector<int32_t> topleft =
         at - frame->origin;
@@ -67,8 +67,8 @@ Error Renderer::Target::frame(
     quad[3].uv[1] = bottomright_uv.y;
 
     that->drawable.vbo_load(
-            quad,
-            sizeof(quad) / sizeof(*quad));
+        quad,
+        sizeof(quad) / sizeof(*quad));
 
     glUseProgram(that->program.program);
     glBindVertexArray(that->drawable.vao);
@@ -78,10 +78,10 @@ Error Renderer::Target::frame(
     glBindTexture(GL_TEXTURE_2D, frame->texture);
 
     glDrawElements(
-            that->drawable.vbo_mode,
-            6,
-            that->drawable.ebo_type,
-            nullptr);
+        that->drawable.vbo_mode,
+        6,
+        that->drawable.ebo_type,
+        nullptr);
 
     ++metrics.draw_calls;
 
@@ -89,9 +89,9 @@ Error Renderer::Target::frame(
 }
 
 void Renderer::Target::line_withoptions(
-        const gfx::Vector<int32_t> start_i,
-        const gfx::Vector<int32_t> end_i,
-        const Renderer::Target::LineOptions options) {
+    const gfx::Vector<int32_t> start_i,
+    const gfx::Vector<int32_t> end_i,
+    const Renderer::Target::LineOptions options) {
     // Calculate thick lines to draw here:
     //   1. Calculate the vector represented by the line.
     //   2. Calculate a perpendicular vector.
@@ -99,10 +99,10 @@ void Renderer::Target::line_withoptions(
     //   4. Offset the line's endpoints by this vector, and it's reflection.
     glUseProgram(that->line_program.program);
     glUniformMatrix4fv(
-            that->line_program.uniforms.at("projection"),
-            1,
-            GL_FALSE,
-            &projection[0][0]);
+        that->line_program.uniforms.at("projection"),
+        1,
+        GL_FALSE,
+        &projection[0][0]);
     const gfx::Vector<float> start = (gfx::Vector<float>) start_i;
     const gfx::Vector<float> end = (gfx::Vector<float>) end_i;
 
@@ -157,8 +157,8 @@ void Renderer::Target::line_withoptions(
 }
 
 void Renderer::Target::rect_withoptions(
-        const gfx::Rect<int32_t> r,
-        const Target::LineOptions options) {
+    const gfx::Rect<int32_t> r,
+    const Target::LineOptions options) {
     const gfx::Vector<int32_t> topright = {
         .x = r.bottomright.x,
         .y = r.topleft.y,
@@ -169,40 +169,40 @@ void Renderer::Target::rect_withoptions(
     };
 
     line_withoptions(
-            r.topleft,
-            topright,
-            options);
+        r.topleft,
+        topright,
+        options);
     line_withoptions(
-            topright,
-            r.bottomright,
-            options);
+        topright,
+        r.bottomright,
+        options);
     line_withoptions(
-            r.bottomright,
-            bottomleft,
-            options);
+        r.bottomright,
+        bottomleft,
+        options);
     line_withoptions(
-            bottomleft,
-            r.topleft,
-            options);
+        bottomleft,
+        r.topleft,
+        options);
 }
 
 Error Renderer::init(
-        Renderer* that) {
+    Renderer* that) {
     CHECK(gfx::Program::init(
-                &that->program),
-            Error::UIERROR) << "failed to load shader program";
+        &that->program),
+        Error::UIERROR) << "failed to load shader program";
     LOG(Logger::INFO) << "loaded render program";
 
     gfx::Drawable::InitOptions drawable_init_options;
     CHECK(gfx::Drawable::init(
-                &that->drawable,
-                &that->program.program,
-                &drawable_init_options),
-            Error::GLERROR) << "failed to init drawable";
+        &that->drawable,
+        &that->program.program,
+        &drawable_init_options),
+        Error::GLERROR) << "failed to init drawable";
     LOG(Logger::INFO) << "loaded render drawable";
 
     gl::Program<gfx::LineVertex>::CompileOptions compile_options;
-    compile_options.vertex_shader = 
+    compile_options.vertex_shader =
         "#version 330\n"
         "uniform mat4 projection;\n"
         "in vec4 color;\n"
@@ -228,26 +228,26 @@ Error Renderer::init(
         "  out_color = t * fragment_color;\n"
         "}\n";
     CHECK(gl::Program<gfx::LineVertex>::compileandlink(
-                &that->line_program,
-                &compile_options),
-            Error::UIERROR) << "failed to compile line program";
+        &that->line_program,
+        &compile_options),
+        Error::UIERROR) << "failed to compile line program";
     LOG(Logger::INFO) << "loaded line program";
 
     gl::Drawable<gfx::LineVertex>::InitOptions line_drawable_init_options;
     CHECK(gl::Drawable<gfx::LineVertex>::init(
-                &that->line_drawable,
-                &that->line_program,
-                &line_drawable_init_options),
-            Error::GLERROR) << "failed to init line drawable";
+        &that->line_drawable,
+        &that->line_program,
+        &line_drawable_init_options),
+        Error::GLERROR) << "failed to init line drawable";
     LOG(Logger::INFO) << "loaded line drawable";
 
     return Error();
 }
 
 static inline void matrixmultiply(
-        GLfloat into[4][4],
-        const GLfloat left[4][4],
-        const GLfloat right[4][4]) {
+    GLfloat into[4][4],
+    const GLfloat left[4][4],
+    const GLfloat right[4][4]) {
 #define MUL(x, y) \
     into[x][y] = \
         (left[0][y] * right[x][0]) + \
@@ -283,8 +283,8 @@ static void printmatrix(GLfloat m[4][4]) {
 }
 
 Renderer::Target Renderer::begin(
-        gl::Window::Frame* target,
-        gfx::Rect<double> viewport) {
+    gl::Window::Frame* target,
+    gfx::Rect<double> viewport) {
     Renderer::Target render_target;
     render_target.that = this;
     render_target.target = target;

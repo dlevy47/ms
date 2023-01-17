@@ -5,10 +5,10 @@
 namespace gfx {
 
 Error Program::init(
-        Program* self) {
+    Program* self) {
     LOG(Logger::INFO) << "compiling shaders";
     gl::Program<Vertex>::CompileOptions compile_options;
-    compile_options.vertex_shader = 
+    compile_options.vertex_shader =
         "#version 330\n"
         "uniform mat4 projection;\n"
         "in vec2 position;\n"
@@ -36,9 +36,9 @@ Error Program::init(
         "}\n";
 
     CHECK(gl::Program<Vertex>::compileandlink(
-                &self->program,
-                &compile_options),
-            Error::UIERROR) << "failed to compile render program";
+        &self->program,
+        &compile_options),
+        Error::UIERROR) << "failed to compile render program";
 
     LOG(Logger::INFO) << "shaders compiled";
     return Error();

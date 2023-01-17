@@ -81,7 +81,7 @@ struct Vector {
     explicit operator Vector<U>() const {
         return Vector<U> {
             .x = static_cast<U>(x),
-            .y = static_cast<U>(y),
+                .y = static_cast<U>(y),
         };
     }
 };

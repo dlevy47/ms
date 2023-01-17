@@ -63,11 +63,11 @@ struct Time {
 
         T* operator->() {
             return &std::get<T>(
-                    (*system->components.items[index]).value);
+                (*system->components.items[index]).value);
         }
         const T* operator->() const {
             return &std::get<T>(
-                    (*system->components.items[index]).value);
+                (*system->components.items[index]).value);
         }
 
         Handle<T>& operator=(Handle<T>&& rhs) {
@@ -106,8 +106,8 @@ struct Time {
     void tick();
 
     static void init(
-            Time* self,
-            uint64_t now) {
+        Time* self,
+        uint64_t now) {
         self->last = now;
     }
 

@@ -9,8 +9,8 @@ struct Vertex {
     float uv[2];
 
     static Error configure(
-            const gl::Program<Vertex>* program,
-            const gl::Drawable<Vertex>* drawable);
+        const gl::Program<Vertex>* program,
+        const gl::Drawable<Vertex>* drawable);
 };
 
 typedef gl::Drawable<Vertex> Drawable;

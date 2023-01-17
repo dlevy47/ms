@@ -36,12 +36,12 @@ struct Window {
     // and a boolean indicating whether a new value is available.
     struct {
         gfx::Vector<double> value;
-        bool available { false };
+        bool available{ false };
     } scroll;
 
     struct Keypress {
-        int key { 0 };
-        int action { GLFW_PRESS };
+        int key{ 0 };
+        int action{ GLFW_PRESS };
     };
 
     std::queue<Keypress> keys;
@@ -49,8 +49,8 @@ struct Window {
     std::queue<unsigned int> key_codepoints;
 
     static Error init(
-            Window* r,
-            const char* window_title);
+        Window* r,
+        const char* window_title);
 
     // size gets the current window size.
     void size(int* width, int* height) const;
@@ -74,8 +74,8 @@ struct Window {
 
     // frame starts a new rendering frame.
     Error frame(
-            Frame* f,
-            gfx::Rect<uint32_t> viewport);
+        Frame* f,
+        gfx::Rect<uint32_t> viewport);
 
     // shouldclose returns whether or not this window has requested to close.
     bool shouldclose() {

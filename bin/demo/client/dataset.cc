@@ -21,8 +21,8 @@ std::string convert(const wchar_t* s) {
 }
 
 Error Dataset::opendirectory(
-        Dataset* self,
-        const std::filesystem::path& path) {
+    Dataset* self,
+    const std::filesystem::path& path) {
     struct ToOpen {
         Wz* into;
         const char* basename;
@@ -102,9 +102,9 @@ Error Dataset::opendirectory(
         std::string path_converted = convert(wz_path.c_str());
 
         CHECK(wz::Wz::open(&to_open[i].into->wz, path_converted.c_str()),
-                Error::OPENFAILED) << "failed to open " << to_open[i].basename;
+            Error::OPENFAILED) << "failed to open " << to_open[i].basename;
         CHECK(wz::Vfs::open(&to_open[i].into->vfs, &to_open[i].into->wz),
-                Error::OPENFAILED) << "failed to build vfs for " << to_open[i].basename;
+            Error::OPENFAILED) << "failed to build vfs for " << to_open[i].basename;
 
         LOG(Logger::INFO)
             << "loaded " << to_open[i].basename;
@@ -114,9 +114,9 @@ Error Dataset::opendirectory(
 }
 
 static void openfiles(
-        std::vector<std::wstring>* names,
-        std::wstring prefix,
-        const wz::Vfs::Directory* dir) {
+    std::vector<std::wstring>* names,
+    std::wstring prefix,
+    const wz::Vfs::Directory* dir) {
     for (const auto& it : dir->children) {
         const wz::Vfs::Node* child = &it.second;
         if (const wz::Vfs::File* file = child->file()) {
@@ -125,9 +125,9 @@ static void openfiles(
             }
         } else if (const wz::Vfs::Directory* directory = child->directory()) {
             openfiles(
-                    names,
-                    prefix + L"/" + it.first,
-                    directory);
+                names,
+                prefix + L"/" + it.first,
+                directory);
         }
     }
 }
@@ -207,9 +207,9 @@ std::vector<std::wstring> Dataset::openfiles() const {
     std::vector<std::wstring> names;
     for (size_t i = 0; i < sizeof(to_open) / sizeof(*to_open); ++i) {
         ::client::openfiles(
-                &names,
-                to_open[i].basename,
-                to_open[i].into->vfs.root.directory());
+            &names,
+            to_open[i].basename,
+            to_open[i].into->vfs.root.directory());
     }
 
     return names;

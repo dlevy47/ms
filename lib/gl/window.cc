@@ -33,8 +33,8 @@ bool Window::consume_scroll(gfx::Vector<double>* scroll) {
 }
 
 Error Window::frame(
-        Window::Frame* f,
-        gfx::Rect<uint32_t> viewport) {
+    Window::Frame* f,
+    gfx::Rect<uint32_t> viewport) {
     f->window = this;
     f->viewport = viewport;
 
@@ -47,42 +47,42 @@ Error Window::frame(
     glActiveTexture(GL_TEXTURE0);
 
     glViewport(
-            viewport.topleft.x,
-            viewport.topleft.y,
-            viewport.bottomright.x - viewport.topleft.x,
-            viewport.bottomright.y - viewport.topleft.y);
+        viewport.topleft.x,
+        viewport.topleft.y,
+        viewport.bottomright.x - viewport.topleft.x,
+        viewport.bottomright.y - viewport.topleft.y);
 
     return Error();
 }
 
 static void Window_char_callback(
-        GLFWwindow* glfw_window,
-        unsigned int codepoint) {
+    GLFWwindow* glfw_window,
+    unsigned int codepoint) {
     Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
     window->char_callback(codepoint);
 }
 
 static void Window_key_callback(
-        GLFWwindow* glfw_window,
-        int key,
-        int scancode,
-        int action,
-        int mods) {
+    GLFWwindow* glfw_window,
+    int key,
+    int scancode,
+    int action,
+    int mods) {
     Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
     window->key_callback(key, scancode, action, mods);
 }
 
 static void Window_scroll_callback(
-        GLFWwindow* glfw_window,
-        double x,
-        double y) {
+    GLFWwindow* glfw_window,
+    double x,
+    double y) {
     Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
     window->scroll_callback(x, y);
 }
 
 Error Window::init(
-        Window* w,
-        const char* window_title) {
+    Window* w,
+    const char* window_title) {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 1);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -118,16 +118,16 @@ Error Window::init(
 
 void Window::size(int* width, int* height) const {
     glfwGetWindowSize(
-            const_cast<GLFWwindow*>(window.get()),
-            width,
-            height);
+        const_cast<GLFWwindow*>(window.get()),
+        width,
+        height);
 }
 
 void Window::framebuffer_size(int* width, int* height) const {
     glfwGetFramebufferSize(
-            const_cast<GLFWwindow*>(window.get()),
-            width,
-            height);
+        const_cast<GLFWwindow*>(window.get()),
+        width,
+        height);
 }
 
 }

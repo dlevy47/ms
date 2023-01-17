@@ -3,7 +3,7 @@
 namespace gl {
 
 static std::string Program_compileandlink_getshadererror(
-        GLuint shader) {
+    GLuint shader) {
     GLint length = 0;
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
 
@@ -15,8 +15,8 @@ static std::string Program_compileandlink_getshadererror(
 
 template <typename V>
 Error Program<V>::compileandlink(
-        Program* program,
-        const Program::CompileOptions* options) {
+    Program* program,
+    const Program::CompileOptions* options) {
     GLint status;
 
     // TODO: Properly clean up on failure here.
@@ -88,13 +88,13 @@ Error Program<V>::compileandlink(
         GLenum type;
 
         glGetActiveAttrib(
-                *program,
-                static_cast<GLuint>(i),
-                attribute_name_length,
-                nullptr, 
-                &size,
-                &type,
-                attribute_name.data());
+            *program,
+            static_cast<GLuint>(i),
+            attribute_name_length,
+            nullptr,
+            &size,
+            &type,
+            attribute_name.data());
 
         program->attributes[attribute_name.c_str()] = glGetAttribLocation(*program, attribute_name.c_str());
     }
@@ -111,13 +111,13 @@ Error Program<V>::compileandlink(
         GLenum type;
 
         glGetActiveUniform(
-                *program,
-                static_cast<GLuint>(i),
-                uniform_name_length,
-                nullptr, 
-                &size,
-                &type,
-                uniform_name.data());
+            *program,
+            static_cast<GLuint>(i),
+            uniform_name_length,
+            nullptr,
+            &size,
+            &type,
+            uniform_name.data());
 
         program->uniforms[uniform_name.c_str()] = glGetUniformLocation(*program, uniform_name.c_str());
     }
@@ -127,36 +127,36 @@ Error Program<V>::compileandlink(
 
 template <typename V>
 Error Drawable<V>::init(
-        Drawable* self,
-        const Program<V>* program,
-        const InitOptions* options) {
+    Drawable* self,
+    const Program<V>* program,
+    const InitOptions* options) {
     self->vbo_mode = GL_TRIANGLES;
     glGenVertexArrays(1, &self->vao);
     glGenBuffers(1, &self->vbo);
     glGenBuffers(1, &self->ebo);
 
     CHECK(V::configure(
-                program,
-                self),
-            Error::GLERROR)
+        program,
+        self),
+        Error::GLERROR)
         << "failed to configure VAO for vertex";
 
     if (options->vbo_init_size) {
         glBindBuffer(GL_ARRAY_BUFFER, self->vbo);
         glBufferData(
-                GL_ARRAY_BUFFER,
-                options->vbo_init_size,
-                nullptr,
-                GL_DYNAMIC_DRAW);
+            GL_ARRAY_BUFFER,
+            options->vbo_init_size,
+            nullptr,
+            GL_DYNAMIC_DRAW);
     }
 
     if (options->ebo_init_size) {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self->ebo);
         glBufferData(
-                GL_ELEMENT_ARRAY_BUFFER,
-                options->ebo_init_size,
-                nullptr,
-                GL_DYNAMIC_DRAW);
+            GL_ELEMENT_ARRAY_BUFFER,
+            options->ebo_init_size,
+            nullptr,
+            GL_DYNAMIC_DRAW);
     }
 
     return Error();

@@ -5,7 +5,7 @@
 namespace client {
 
 Time now() {
-    struct timeval tv = {0};
+    struct timeval tv = { 0 };
     gettimeofday(&tv, nullptr);
 
     Time t = {

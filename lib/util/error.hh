@@ -61,8 +61,8 @@ struct Error {
         std::wstringstream message;
 
         Frame(Kind kind,
-                const char* file,
-                size_t line):
+            const char* file,
+            size_t line):
             kind(kind), file(file), line(line) {}
 
         Frame(const Frame& rhs):
@@ -73,24 +73,24 @@ struct Error {
     std::vector<Frame> frames;
 
     template <typename T>
-        Error& operator<<(T t) {
-            frames.back().message << t;
-            return *this;
-        }
+    Error& operator<<(T t) {
+        frames.back().message << t;
+        return *this;
+    }
 
     Error(
-            Kind kind,
-            const char* file,
-            size_t line): frames() {
+        Kind kind,
+        const char* file,
+        size_t line): frames() {
         push(kind, file, line);
     }
 
     Error(): frames() {}
 
     Error& push(
-            Kind kind,
-            const char* file,
-            size_t line) {
+        Kind kind,
+        const char* file,
+        size_t line) {
         frames.emplace_back(kind, file, line);
         return *this;
     }

@@ -39,8 +39,8 @@ struct Dataset {
     Wz ui;
 
     static Error opendirectory(
-            Dataset* self,
-            const std::filesystem::path& path);
+        Dataset* self,
+        const std::filesystem::path& path);
 
     std::vector<std::wstring> openfiles() const;
 

@@ -53,9 +53,9 @@ struct Browser {
     nk::Ui ui;
 
     static Error init(
-            Browser* b,
-            const std::vector<std::string>& argv,
-            const char* window_title);
+        Browser* b,
+        const std::vector<std::string>& argv,
+        const char* window_title);
 
     Error run();
 

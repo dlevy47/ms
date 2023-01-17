@@ -4,8 +4,8 @@ namespace ms {
 namespace game {
 
 Error MapState::init(
-        MapState* state,
-        ms::Map&& basemap) {
+    MapState* state,
+    ms::Map&& basemap) {
     state->version = 0;
     state->basemap = std::move(basemap);
 
@@ -13,7 +13,7 @@ Error MapState::init(
 }
 
 Error MapState::apply(
-        const MapState::Update::List* updates) {
+    const MapState::Update::List* updates) {
     // TODO: handle updates.
     return Error();
 }

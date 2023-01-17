@@ -5,25 +5,25 @@ Logger::Message Logger::log(
         const char* file,
         int line,
         const char* function) {
-    time_t now_timer;
-    ::time(&now_timer);
+        time_t now_timer;
+        ::time(&now_timer);
 
-    struct tm now;
-    ::localtime_s(&now, &now_timer);
+        struct tm now;
+        ::localtime_s(&now, &now_timer);
 
-    Message m;
+        Message m;
 
-    m.logger = this;
-    wcsftime(
-            m.timestamp_str,
-            sizeof(m.timestamp_str) / sizeof(*m.timestamp_str),
-            L"%Y-%m-%d %T",
-            &now);
-    m.level = level;
-    m.file = file;
-    m.line = line;
-    m.function = function;
+        m.logger = this;
+        wcsftime(
+                m.timestamp_str,
+                sizeof(m.timestamp_str) / sizeof(*m.timestamp_str),
+                L"%Y-%m-%d %T",
+                &now);
+        m.level = level;
+        m.file = file;
+        m.line = line;
+        m.function = function;
 
-    return std::move(m);
+        return std::move(m);
 }
 

@@ -47,11 +47,11 @@ struct P {
         return x != nullptr;
     }
 
-    operator T*() {
+    operator T* () {
         return x;
     }
 
-    operator const T*() const {
+    operator const T* () const {
         return x;
     }
 
@@ -129,10 +129,10 @@ struct N {
     }
 
     N():
-        x((T) 0) {}
+        x((T)0) {}
 
     N(N&& rhs):
-        x(std::exchange(rhs.x, (T) 0)) {}
+        x(std::exchange(rhs.x, (T)0)) {}
 
     N(N&) = default;
 

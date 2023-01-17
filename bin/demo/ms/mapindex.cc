@@ -7,9 +7,9 @@
 namespace ms {
 
 static bool keyword(
-        size_t* at,
-        std::wstring* keyword,
-        const std::wstring* s) {
+    size_t* at,
+    std::wstring* keyword,
+    const std::wstring* s) {
     const wchar_t* SPACES = L" \n";
     *at = s->find_first_not_of(SPACES, *at);
 
@@ -29,13 +29,13 @@ static bool keyword(
 }
 
 std::vector<ms::Map::ID> MapIndex::search(
-        const wchar_t* name) const {
+    const wchar_t* name) const {
     std::wstring name_s(name);
 
     struct Metric {
-        size_t position { 0 };
-        size_t length { 0 };
-        size_t name_length { 0 };
+        size_t position{ 0 };
+        size_t length{ 0 };
+        size_t name_length{ 0 };
 
         bool operator==(const Metric& rhs) const {
             return position == rhs.position &&
@@ -82,9 +82,9 @@ std::vector<ms::Map::ID> MapIndex::search(
     }
 
     struct KeywordMatch {
-        size_t start { 0 };
-        size_t last_keyword { 0 };
-        size_t length { 0 };
+        size_t start{ 0 };
+        size_t last_keyword{ 0 };
+        size_t length{ 0 };
     };
 
     std::unordered_map<ms::Map::ID, KeywordMatch, ms::Map::ID::Hash> keyword_matches;
@@ -146,25 +146,25 @@ std::vector<ms::Map::ID> MapIndex::search(
     }
 
     std::sort(
-            ret.begin(),
-            ret.end(),
-            [&](const ms::Map::ID& left_id, const ms::Map::ID& right_id) {
+        ret.begin(),
+        ret.end(),
+        [&](const ms::Map::ID& left_id, const ms::Map::ID& right_id) {
             const auto& left = found[left_id];
-            const auto& right = found[right_id];
+    const auto& right = found[right_id];
 
-            if (left == right) {
-                return left.name_length < right.name_length;
-            }
+    if (left == right) {
+        return left.name_length < right.name_length;
+    }
 
-            return left < right;
-            });
+    return left < right;
+        });
 
     return ret;
 }
 
 Error MapIndex::load(
-        MapIndex* self,
-        wz::Vfs::File::Handle&& map_file) {
+    MapIndex* self,
+    wz::Vfs::File::Handle&& map_file) {
     self->map_file = std::move(map_file);
 
     auto realm_it = self->map_file->iterator();
@@ -178,8 +178,8 @@ Error MapIndex::load(
         while ((map = map_it.next())) {
             ms::Map::ID this_id;
             if (ms::Map::ID::from(
-                        &this_id,
-                        map->name)) {
+                &this_id,
+                map->name)) {
                 LOG(Logger::WARNING) << "map strings node name is unexpectedly "
                     << "not a map ID: " << realm->name << "/" << map->name;
                 continue;
@@ -193,8 +193,8 @@ Error MapIndex::load(
 
             const wchar_t* map_name = nullptr;
             if (map->childstring(
-                        L"mapName",
-                        &map_name)) {
+                L"mapName",
+                &map_name)) {
                 LOG(Logger::WARNING) << "map strings node " << realm->name <<
                     "/" << map->name << " has no mapName";
                 continue;
@@ -224,8 +224,8 @@ Error MapIndex::load(
             std::wstring k;
             while (keyword(&at, &k, &map_name_s)) {
                 self->keyword_to_id.insert(
-                        k.c_str(),
-                        std::make_pair(this_id, at));
+                    k.c_str(),
+                    std::make_pair(this_id, at));
             }
 
             self->id_to_name[this_id] = map_name;

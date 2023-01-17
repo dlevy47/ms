@@ -6,11 +6,11 @@
 Error Demo::draw_ui(gl::Window* window) {
     gfx::Vector<int> window_size;
     window->size(
-            &window_size.x,
-            &window_size.y);
+        &window_size.x,
+        &window_size.y);
 
     if (nk_begin(ui.context, "Find map", nk_rect(0, 0, window_size.x / 3, window_size.y / 2),
-                NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_BACKGROUND)) {
+        NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_BACKGROUND)) {
         nk_layout_row_dynamic(ui.context, 0, 2);
         nk_label(ui.context, "Map Name: ", NK_TEXT_RIGHT);
 
@@ -27,10 +27,10 @@ Error Demo::draw_ui(gl::Window* window) {
             map_ids = map_index.search(key.c_str());
 
             if (nk_tree_push(
-                        ui.context,
-                        NK_TREE_NODE,
-                        "map list",
-                        NK_MAXIMIZED)) {
+                ui.context,
+                NK_TREE_NODE,
+                "map list",
+                NK_MAXIMIZED)) {
                 for (size_t i = 0; i < map_ids.size(); ++i) {
                     const ms::Map::ID id = map_ids[i];
                     std::string label;
@@ -47,7 +47,7 @@ Error Demo::draw_ui(gl::Window* window) {
                         nk_layout_row_push(ui.context, 0.1);
                         if (nk_button_label(ui.context, ">")) {
                             CHECK(load_map(id),
-                                    Error::UIERROR)
+                                Error::UIERROR)
                                 << "failed to load map";
                         }
                     }
@@ -60,7 +60,7 @@ Error Demo::draw_ui(gl::Window* window) {
     nk_end(ui.context);
 
     if (nk_begin(ui.context, "Debug", nk_rect(window_size.x / 3, window_size.y / 2, window_size.x / 3, window_size.y / 3),
-                NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_BACKGROUND)) {
+        NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_BACKGROUND)) {
         nk_layout_row_dynamic(ui.context, 30, 1);
 
         map_state_options.debug.bounding_box =
@@ -78,12 +78,12 @@ Error Demo::draw_ui(gl::Window* window) {
 }
 
 Error Demo::init(
-        Demo* self,
-        const std::filesystem::path& dataset_path,
-        uint64_t now,
-        gfx::Vector<int32_t> window_size) {
+    Demo* self,
+    const std::filesystem::path& dataset_path,
+    uint64_t now,
+    gfx::Vector<int32_t> window_size) {
     CHECK(client::Dataset::opendirectory(&self->dataset, dataset_path),
-            Error::OPENFAILED) << "failed to load dataset";
+        Error::OPENFAILED) << "failed to load dataset";
 
     wz::Vfs::Node* map_node = self->dataset.string.vfs.find(L"Map.img");
     if (map_node == nullptr || map_node->file() == nullptr) {
@@ -93,46 +93,46 @@ Error Demo::init(
 
     wz::Vfs::File::Handle map_file;
     CHECK(map_node->file()->open(&map_file),
-            Error::OPENFAILED) << "failed to open Map.img";
+        Error::OPENFAILED) << "failed to open Map.img";
     LOG(Logger::INFO)
         << "loaded Strings/Map.img";
 
     CHECK(ms::MapIndex::load(
-                &self->map_index,
-                std::move(map_file)),
-            Error::UIERROR)
+        &self->map_index,
+        std::move(map_file)),
+        Error::UIERROR)
         << "failed to load map index";
 
     systems::Time::init(
-            &self->universe.time,
-            now);
+        &self->universe.time,
+        now);
 
     CHECK(client::renderer::MapLoader::init(
-                &self->map_loader,
-                &self->dataset,
-                &self->universe),
-            Error::UIERROR)
+        &self->map_loader,
+        &self->dataset,
+        &self->universe),
+        Error::UIERROR)
         << "failed to init map loader";
     LOG(Logger::INFO)
         << "inited map loader";
 
     CHECK(client::game::Renderer::init(
-                &self->game_renderer),
-            Error::UIERROR) << "failed to init client renderer";
+        &self->game_renderer),
+        Error::UIERROR) << "failed to init client renderer";
 
     CHECK(nk::Ui::init(
-                &self->ui),
-            Error::UIERROR) << "failed to initialize nk ui";
+        &self->ui),
+        Error::UIERROR) << "failed to initialize nk ui";
 
     CHECK(client::ui::NkRenderer::init(
-                &self->nk_renderer),
-            Error::UIERROR) << "failed to initialize nk renderer";
+        &self->nk_renderer),
+        Error::UIERROR) << "failed to initialize nk renderer";
 
     return Error();
 }
 
 Error Demo::load_map(
-        ms::Map::ID map_id) {
+    ms::Map::ID map_id) {
     std::wstring map_filename = map_id.as_filename();
     LOG(Logger::INFO)
         << "looking for " << map_filename;
@@ -147,26 +147,26 @@ Error Demo::load_map(
     // Open the file.
     wz::Vfs::File::Handle map_file;
     CHECK(map_node->file()->open(&map_file),
-            Error::OPENFAILED) << "failed to open map file";
+        Error::OPENFAILED) << "failed to open map file";
     LOG(Logger::INFO)
         << "loaded map file";
 
     // Load the logical map.
     ms::Map map;
     CHECK(ms::Map::load(
-                &map,
-                map_id,
-                std::move(map_file)),
-            Error::OPENFAILED) << "failed to load logical map";
+        &map,
+        map_id,
+        std::move(map_file)),
+        Error::OPENFAILED) << "failed to load logical map";
     LOG(Logger::INFO) << "logical map loaded";
 
     std::unique_ptr<ms::game::MapState> new_map_state =
         std::make_unique<ms::game::MapState>();
 
     CHECK(ms::game::MapState::init(
-                new_map_state.get(),
-                std::move(map)),
-            Error::UIERROR) << "failed to load map state";
+        new_map_state.get(),
+        std::move(map)),
+        Error::UIERROR) << "failed to load map state";
     map_state.swap(new_map_state);
 
     const wchar_t* name = map_index.name(map_id);

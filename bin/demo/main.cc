@@ -41,13 +41,13 @@ Error main_(const std::vector<std::string>& args) {
     glfwSetErrorCallback(glfw_errorcallback);
 
     CHECK(gl::init(),
-            Error::UIERROR) << "failed to initialize gl";
+        Error::UIERROR) << "failed to initialize gl";
 
     gl::Window window;
     CHECK(gl::Window::init(
-                &window,
-                "Map demo"),
-            Error::UIERROR) << "failed to initialize window";
+        &window,
+        "Map demo"),
+        Error::UIERROR) << "failed to initialize window";
 
     // Convert the provided map ID to an integer so that we can
     // convert it to a properly sized string below.
@@ -63,16 +63,16 @@ Error main_(const std::vector<std::string>& args) {
 
     gfx::Vector<int> framebuffer_size;
     window.framebuffer_size(
-            &framebuffer_size.x,
-            &framebuffer_size.y);
+        &framebuffer_size.x,
+        &framebuffer_size.y);
 
     Demo demo;
     CHECK(Demo::init(
-                &demo,
-                args[1],
-                client::now().to_milliseconds(),
-                framebuffer_size),
-            Error::UIERROR)
+        &demo,
+        args[1],
+        client::now().to_milliseconds(),
+        framebuffer_size),
+        Error::UIERROR)
         << "failed to initialize demo";
 
     if (args.size() > 3) {
@@ -95,23 +95,23 @@ Error main_(const std::vector<std::string>& args) {
     }
 
     CHECK(demo.load_map(map_id),
-            Error::UIERROR)
+        Error::UIERROR)
         << "failed to load map " << map_id;
     {
         // Set initial viewport.
         gfx::Vector<int> window_size;
 
         window.size(
-                &window_size.x,
-                &window_size.y);
+            &window_size.x,
+            &window_size.y);
 
         // The map viewport starts as a rectangle the same size as the window, centered on the
         // center of the map.
-        gfx::Rect<int32_t> starting_viewport = {0};
+        gfx::Rect<int32_t> starting_viewport = { 0 };
         starting_viewport.bottomright = window_size;
 
         starting_viewport.translate(
-                demo.map_state->basemap.bounding_box.center() - starting_viewport.center());
+            demo.map_state->basemap.bounding_box.center() - starting_viewport.center());
         demo.map_viewport = (gfx::Rect<double>) starting_viewport;
     }
 
@@ -122,11 +122,11 @@ Error main_(const std::vector<std::string>& args) {
         gfx::Vector<int> display_size;
 
         window.size(
-                &window_size.x,
-                &window_size.y);
+            &window_size.x,
+            &window_size.y);
         window.framebuffer_size(
-                &display_size.x,
-                &display_size.y);
+            &display_size.x,
+            &display_size.y);
 
         struct {
             struct {
@@ -142,9 +142,9 @@ Error main_(const std::vector<std::string>& args) {
 
         {
             glfwGetCursorPos(
-                    window.window,
-                    &mouse.screen.now.x,
-                    &mouse.screen.now.y);
+                window.window,
+                &mouse.screen.now.x,
+                &mouse.screen.now.y);
 
             // Mouse positions are in screen space. First, project them to NDC.
             mouse.ndc.now.x = ((mouse.screen.now.x * 2) / window_size.x) - 1;
@@ -168,15 +168,15 @@ Error main_(const std::vector<std::string>& args) {
         {
             gl::Window::Frame frame;
             CHECK(window.frame(
-                        &frame,
-                        window_viewport),
-                    Error::UIERROR) << "failed to start frame";
+                &frame,
+                window_viewport),
+                Error::UIERROR) << "failed to start frame";
 
             {
                 client::game::Renderer::Target target =
                     demo.game_renderer.begin(
-                            &frame,
-                            demo.map_viewport);
+                        &frame,
+                        demo.map_viewport);
 
                 gfx::Vector<double> map_tmp = target.unproject(mouse.ndc.now);
                 if (drag) {
@@ -205,12 +205,12 @@ Error main_(const std::vector<std::string>& args) {
                 }
 
                 CHECK(demo.map_state_renderer.render(
-                            &demo.map_state_options,
-                            &target,
-                            &demo.map_loader,
-                            demo.map_state.get(),
-                            demo.universe.time.last),
-                        Error::UIERROR) << "failed to render map";
+                    &demo.map_state_options,
+                    &target,
+                    &demo.map_loader,
+                    demo.map_state.get(),
+                    demo.universe.time.last),
+                    Error::UIERROR) << "failed to render map";
 
                 {
                     using namespace std::literals;
@@ -234,17 +234,17 @@ Error main_(const std::vector<std::string>& args) {
             }
 
             demo.ui.input(
-                    &window,
-                    nk_window_is_any_hovered(demo.ui.context));
+                &window,
+                nk_window_is_any_hovered(demo.ui.context));
 
             CHECK(demo.draw_ui(&window),
-                    Error::UIERROR)
+                Error::UIERROR)
                 << "failed to draw demo ui";
 
             demo.nk_renderer.render(
-                    &frame,
-                    window_size,
-                    &demo.ui);
+                &frame,
+                window_size,
+                &demo.ui);
         }
 
         {

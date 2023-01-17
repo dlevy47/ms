@@ -30,8 +30,8 @@ struct Map {
         };
 
         static bool from(
-                ID* self,
-                const wchar_t* name);
+            ID* self,
+            const wchar_t* name);
     };
 
     struct Foothold {
@@ -133,9 +133,9 @@ struct Map {
     gfx::Rect<int32_t> bounding_box;
 
     static Error load(
-            Map* self,
-            ID id,
-            wz::Vfs::File::Handle&& map_file);
+        Map* self,
+        ID id,
+        wz::Vfs::File::Handle&& map_file);
 
     Map() = default;
     Map(Map&&) = default;

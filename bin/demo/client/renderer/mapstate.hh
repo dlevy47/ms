@@ -24,13 +24,13 @@ struct MapLoader {
     std::unordered_map<ms::Map::ID, client::Map, ms::Map::ID::Hash> maps;
 
     static Error init(
-            MapLoader* loader,
-            client::Dataset* dataset,
-            client::Universe* universe);
+        MapLoader* loader,
+        client::Dataset* dataset,
+        client::Universe* universe);
 
     Error load(
-            client::Map** map,
-            ms::Map::ID id);
+        client::Map** map,
+        ms::Map::ID id);
 
     MapLoader() = default;
     MapLoader(const MapLoader&) = delete;
@@ -40,25 +40,25 @@ struct MapLoader {
 struct MapState {
     struct Options {
         struct {
-            bool bounding_box { false };
-            bool footholds { false };
-            bool ladders { false };
-            bool portals { false };
+            bool bounding_box{ false };
+            bool footholds{ false };
+            bool ladders{ false };
+            bool portals{ false };
 
-            float line_width { 2 };
+            float line_width{ 2 };
         } debug;
 
-        bool background { true };
-        bool objects { true };
-        bool tiles { true };
+        bool background{ true };
+        bool objects{ true };
+        bool tiles{ true };
     };
 
     Error render(
-            const Options* options,
-            client::game::Renderer::Target* target,
-            MapLoader* loader,
-            const ms::game::MapState* state,
-            uint64_t now) const;
+        const Options* options,
+        client::game::Renderer::Target* target,
+        MapLoader* loader,
+        const ms::game::MapState* state,
+        uint64_t now) const;
 };
 
 }

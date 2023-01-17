@@ -32,15 +32,15 @@ std::wstring Map::ID::as_filename() const {
 }
 
 bool Map::ID::from(
-        ID* self,
-        const wchar_t* name) {
-    return (bool) util::convert(name, &self->id);
+    ID* self,
+    const wchar_t* name) {
+    return (bool)util::convert(name, &self->id);
 }
 
 Error Map::load(
-        Map* self,
-        ID id,
-        wz::Vfs::File::Handle&& map_file) {
+    Map* self,
+    ID id,
+    wz::Vfs::File::Handle&& map_file) {
     self->id = id;
     self->map_file = std::move(map_file);
 
@@ -58,7 +58,7 @@ Error Map::load(
         while ((layer_node = layer_it.next())) {
             uint32_t layer_index = 0;
             CHECK(util::convert(layer_node->name, &layer_index),
-                    Error::MAP_LOAD_LAYERLOADFAILED)
+                Error::MAP_LOAD_LAYERLOADFAILED)
                 << "layer node name is not an int32_t";
 
             Map::Layer* layer = &self->layers[layer_index];
@@ -69,7 +69,7 @@ Error Map::load(
             while ((group_node = group_it.next())) {
                 uint32_t group_index = 0;
                 CHECK(util::convert(group_node->name, &group_index),
-                        Error::MAP_LOAD_LAYERLOADFAILED)
+                    Error::MAP_LOAD_LAYERLOADFAILED)
                     << "group node name is not an int32_t";
 
                 auto foothold_it = group_node->iterator();
@@ -80,17 +80,17 @@ Error Map::load(
                     foothold.group = group_index;
 
                     CHECK(util::convert(foothold_node->name, &foothold.id),
-                            Error::MAP_LOAD_LAYERLOADFAILED)
+                        Error::MAP_LOAD_LAYERLOADFAILED)
                         << "foothold node name is not an int32_t";
 
                     CHECK(foothold_node->deserialize(
-                                L"x1", &foothold.start.x,
-                                L"y1", &foothold.start.y,
-                                L"x2", &foothold.end.x,
-                                L"y2", &foothold.end.y,
-                                L"prev", &foothold.prev_id,
-                                L"next", &foothold.next_id),
-                            Error::MAP_LOAD_FOOTHOLDLOADFAILED)
+                        L"x1", &foothold.start.x,
+                        L"y1", &foothold.start.y,
+                        L"x2", &foothold.end.x,
+                        L"y2", &foothold.end.y,
+                        L"prev", &foothold.prev_id,
+                        L"next", &foothold.next_id),
+                        Error::MAP_LOAD_FOOTHOLDLOADFAILED)
                         << "foothold property missing or invalid";
 
                     if (foothold.start.x < self->bounding_box.topleft.x)
@@ -128,7 +128,7 @@ Error Map::load(
 
             int32_t layer_index = 0;
             CHECK(ladder_node->childint32(L"page", &layer_index),
-                    Error::MAP_LOAD_LADDERLOADFAILED)
+                Error::MAP_LOAD_LADDERLOADFAILED)
                 << "ladder page missing or invalid";
 
             if (layer_index < 0) {
@@ -141,11 +141,11 @@ Error Map::load(
             int32_t x = 0;
             int32_t uf = 0;
             CHECK(ladder_node->deserialize(
-                        L"uf", &uf,
-                        L"x", &x,
-                        L"y1", &ladder.start.y,
-                        L"y2", &ladder.end.y),
-                    Error::MAP_LOAD_LADDERLOADFAILED)
+                L"uf", &uf,
+                L"x", &x,
+                L"y1", &ladder.start.y,
+                L"y2", &ladder.end.y),
+                Error::MAP_LOAD_LADDERLOADFAILED)
                 << "ladder property missing or invalid";
 
             ladder.start.x = x;
@@ -167,13 +167,13 @@ Error Map::load(
 
             int32_t kind = 0;
             CHECK(portal_node->deserialize(
-                        L"pn", &portal.name,
-                        L"pt", &kind,
-                        L"x", &portal.at.x,
-                        L"y", &portal.at.y,
-                        L"tm", &portal.target_map.id,
-                        L"tn", &portal.target_portal),
-                    Error::MAP_LOAD_PORTALLOADFAILED)
+                L"pn", &portal.name,
+                L"pt", &kind,
+                L"x", &portal.at.x,
+                L"y", &portal.at.y,
+                L"tm", &portal.target_map.id,
+                L"tn", &portal.target_portal),
+                Error::MAP_LOAD_PORTALLOADFAILED)
                 << "portal property missing or invalid";
             if (kind < 0 || kind > Map::Portal::COLLISIONCHANGEABLE) {
                 return error_new(Error::MAP_LOAD_PORTALLOADFAILED)

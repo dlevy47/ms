@@ -46,8 +46,8 @@ struct Logger {
             line(rhs.line),
             function(rhs.function),
             message(std::move(rhs.message)) {
-                memcpy(timestamp_str, rhs.timestamp_str, sizeof(timestamp_str));
-            }
+            memcpy(timestamp_str, rhs.timestamp_str, sizeof(timestamp_str));
+        }
 
         ~Message() {
             if (!logger)
@@ -56,22 +56,22 @@ struct Logger {
             if (level >= logger->threshold) {
                 const char* level_str = "?????";
                 switch (level) {
-                    case Logger::DEBUG:
-                        level_str = "DEBUG";
-                        break;
-                    case Logger::INFO:
-                        level_str = "INFO ";
-                        break;
+                case Logger::DEBUG:
+                    level_str = "DEBUG";
+                    break;
+                case Logger::INFO:
+                    level_str = "INFO ";
+                    break;
                     // case Logger::WARN:
-                    case Logger::WARNING:
-                        level_str = "WARN ";
-                        break;
-                    case Logger::ERROR:
-                        level_str = "ERROR";
-                        break;
-                    case Logger::FATAL:
-                        level_str = "FATAL";
-                        break;
+                case Logger::WARNING:
+                    level_str = "WARN ";
+                    break;
+                case Logger::ERROR:
+                    level_str = "ERROR";
+                    break;
+                case Logger::FATAL:
+                    level_str = "FATAL";
+                    break;
                 }
 
                 std::wstringstream prefix;
@@ -97,10 +97,10 @@ struct Logger {
     }
 
     Message log(
-            Level level,
-            const char* file,
-            int line,
-            const char* function);
+        Level level,
+        const char* file,
+        int line,
+        const char* function);
 };
 
 #define LOG_TO(logger, level) \

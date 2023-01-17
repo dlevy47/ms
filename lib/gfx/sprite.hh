@@ -21,13 +21,13 @@ struct Sprite {
         int32_t delay;
 
         static Error load(
-                Frame* self,
-                wz::Image image,
-                const uint8_t* image_data);
+            Frame* self,
+            wz::Image image,
+            const uint8_t* image_data);
 
         static Error loadfromfile(
-                Frame* self,
-                const wz::OpenedFile::Node* node);
+            Frame* self,
+            const wz::OpenedFile::Node* node);
 
         // quad computes the 4 vertices of the quad suitable for drawing this frame
         // at the specified point. The vertex positions are computed so as to place
@@ -36,17 +36,17 @@ struct Sprite {
         // are offset up and to the left.
         // Vertices are populated clockwise, starting at the top left.
         void quad(
-                Vector<int32_t> at,
-                gfx::Vertex vertices[4]) const;
+            Vector<int32_t> at,
+            gfx::Vertex vertices[4]) const;
 
         GLenum format() const {
             switch (image.format + image.format2) {
-                case 1:
-                case 2:
-                    return GL_BGRA;
-                case 513:
-                case 517:
-                    return GL_RGB;
+            case 1:
+            case 2:
+                return GL_BGRA;
+            case 513:
+            case 517:
+                return GL_RGB;
             }
 
             // TODO: handle errors here?
@@ -55,13 +55,13 @@ struct Sprite {
 
         GLenum type() const {
             switch (image.format + image.format2) {
-                case 1:
-                case 2:
-                    return GL_UNSIGNED_BYTE;
-                case 513:
-                    return GL_UNSIGNED_SHORT_5_6_5;
-                case 517:
-                    return GL_UNSIGNED_SHORT_5_6_5_REV;
+            case 1:
+            case 2:
+                return GL_UNSIGNED_BYTE;
+            case 513:
+                return GL_UNSIGNED_SHORT_5_6_5;
+            case 517:
+                return GL_UNSIGNED_SHORT_5_6_5_REV;
             }
 
             // TODO: handle errors here?
@@ -82,8 +82,8 @@ struct Sprite {
     std::vector<Frame> frames;
 
     static Error loadfromfile(
-            Sprite* self,
-            const wz::OpenedFile::Node* node);
+        Sprite* self,
+        const wz::OpenedFile::Node* node);
 };
 
 }
