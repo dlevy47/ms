@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <variant>
 
 #include "util/error.hh"
 #include "wz/parser.hh"

@@ -364,15 +364,31 @@ struct Vfs {
         struct Equal {
             using is_transparent = void;
 
+            bool operator()(const Basename& l, const Basename& r) const {
+                return l.name == r.name;
+            }
+            
+            bool operator()(const Basename& l, const std::wstring& r) const {
+                return this->operator()(r, l);
+            }
             bool operator()(const std::wstring& l, const Basename& r) const {
                 return (l.size() == r.name.size() + 4) && l.starts_with(r.name) && l.ends_with(L".img");
+            }
+            
+            bool operator()(const std::wstring_view& r, const std::wstring& l) const {
+                return l == r;
             }
             bool operator()(const std::wstring& l, const std::wstring_view& r) const {
                 return l == r;
             }
+            
             bool operator()(const std::wstring& l, const std::wstring& r) const {
                 return ::wcscmp(l.c_str(), r.c_str()) == 0;
             }
+            bool operator()(const wchar_t* l, const std::wstring& r) const {
+                return this->operator()(r, l);
+            }
+            
             bool operator()(const std::wstring& l, const wchar_t* r) const {
                 return ::wcscmp(l.c_str(), r) == 0;
             }
