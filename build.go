@@ -6,6 +6,7 @@
 package main
 
 import (
+    "encoding/json"
     "flag"
 	"fmt"
     "io"
@@ -25,6 +26,15 @@ var (
     clean = flag.Bool("clean", false, "set to true to always recompile everything")
     verbose = flag.Bool("verbose", false, "whether to output the commands being run")
 )
+
+// TODO: Don't use global variable here.
+type CompileCommand struct {
+    Directory string `json:"directory"`
+    Arguments []string `json:"arguments"`
+    File string `json:"file"`
+}
+
+var compileCommands []CompileCommand
 
 func configure(p *Platform, b *Builder) {
     b.Library(
@@ -60,6 +70,25 @@ func main() {
     configure(p, b)
 
     b.MustBuild()
+
+    cwd, err := os.Getwd()
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    for i := range compileCommands {
+        compileCommands[i].Directory = cwd
+    }
+
+    outf, err := os.Create("compile_commands.json")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer outf.Close()
+
+    if err := json.NewEncoder(outf).Encode(compileCommands); err != nil {
+        log.Fatal(err)
+    }
 }
 
 func cflags(additionalIncludes []string) []string{
@@ -328,6 +357,11 @@ func compileCmd(source SourceFile, additionalIncludes []string) (*exec.Cmd, Obje
 
 func compile(source SourceFile, additionalIncludes []string) error {
     cmd, _ := compileCmd(source, additionalIncludes)
+
+    compileCommands = append(compileCommands, CompileCommand{
+        File: string(source),
+        Arguments: cmd.Args,
+    })
 
     stdoutPipe, err := cmd.StdoutPipe()
     if err != nil {
@@ -669,6 +703,14 @@ func (c *Compile) Do(b *Builder, t *Task) error {
         if b.Options.Verbose {
             fmt.Printf("[v] %q up to date\n", t.Name)
         }
+        
+        cmd, _ := compileCmd(c.source, c.includes)
+
+        compileCommands = append(compileCommands, CompileCommand{
+            File: string(c.source),
+            Arguments: cmd.Args,
+        })
+
         return nil
     }
 
