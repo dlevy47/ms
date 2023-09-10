@@ -48,6 +48,17 @@ struct Window {
 
     std::queue<unsigned int> key_codepoints;
 
+    struct MouseButton {
+        enum {
+            PRESS,
+            RELEASE,
+        } action;
+
+        int32_t button;
+    };
+
+    std::queue<MouseButton> mouse_buttons;
+
     static Error init(
         Window* r,
         const char* window_title);
@@ -66,6 +77,9 @@ struct Window {
 
     // char_callback is intended to be called from a glfw character callback.
     void char_callback(unsigned int codepoint);
+
+    // mouse_button_callback is intended to be called from a glfw mouse button callback.
+    void mouse_button_callback(int button, int action, int mods);
 
     // consume_scroll fetches the value of the current scroll, if one is
     // available.

@@ -96,7 +96,7 @@ Error Map::Helper::load(
 
         sprite.frames.emplace_back(std::move(frame));
 
-        self->portal_sprites.emplace(kind, std::move(sprite));
+        self->editor_portal_sprites.emplace(kind, std::move(sprite));
     }
 
     auto game_node =
@@ -122,7 +122,7 @@ Error Map::Helper::load(
             Error::MAP_LOAD_HELPERLOADFAILED)
             << "failed to load pv sprite";
 
-        self->portal_sprites.emplace(
+        self->game_portal_sprites.emplace(
             ms::Map::Portal::VISIBLE,
             std::move(pv_sprite));
     }

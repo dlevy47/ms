@@ -24,7 +24,8 @@ struct Map {
     struct Helper {
         wz::Vfs::File::Handle map_helper_file;
 
-        std::unordered_map<ms::Map::Portal::Kind, gfx::Sprite> portal_sprites;
+        std::unordered_map<ms::Map::Portal::Kind, gfx::Sprite> editor_portal_sprites;
+        std::unordered_map<ms::Map::Portal::Kind, gfx::Sprite> game_portal_sprites;
 
         static Error load(
             Helper* self,

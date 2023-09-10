@@ -115,6 +115,9 @@ struct Error {
         print(ss);
         return ss.str();
     }
+
+    Error(const Error&) = default;
+    Error(Error&&) = default;
 };
 
 inline std::wostream& operator<<(std::wostream& os, const Error& e) {

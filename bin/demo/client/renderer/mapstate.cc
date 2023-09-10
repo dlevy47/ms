@@ -7,6 +7,44 @@
 namespace client {
 namespace renderer {
 
+Error MapHelper::load(
+    MapHelper* self,
+    client::Map::Helper&& helper,
+    systems::Time* time) {
+    self->map_helper_file = std::move(helper.map_helper_file);
+
+    for (auto& p : helper.editor_portal_sprites) {
+        client::Sprite sprite;
+
+        CHECK(client::Sprite::init(
+            &sprite,
+            std::move(p.second),
+            time),
+              Error::UIERROR)
+        << "failed to load client sprite";
+
+        self->portal_sprites.emplace(p.first, std::move(sprite));
+    }
+
+    for (auto& p : helper.game_portal_sprites) {
+        client::Sprite sprite;
+
+        CHECK(client::Sprite::init(
+            &sprite,
+            std::move(p.second),
+            time),
+              Error::UIERROR)
+        << "failed to load client sprite";
+
+        // Erase for p.first first, since emplace doesn't
+        // replace.
+        self->portal_sprites.erase(p.first);
+        self->portal_sprites.emplace(p.first, std::move(sprite));
+    }
+
+    return Error();
+}
+
 Error MapLoader::init(
     MapLoader* loader,
     client::Dataset* dataset,
@@ -26,11 +64,21 @@ Error MapLoader::init(
     LOG(Logger::INFO)
         << "loaded MapHelper.img";
 
+    client::Map::Helper client_map_helper;
     CHECK(client::Map::Helper::load(
-        &loader->map_helper,
+        &client_map_helper,
         std::move(map_helper_file)),
         Error::UIERROR)
-        << "failed to load map helper";
+        << "failed to load client map helper";
+
+    LOG(Logger::INFO)
+        << "loading map helper";
+    CHECK(MapHelper::load(
+        &loader->map_helper,
+        std::move(client_map_helper),
+        &universe->time),
+          Error::UIERROR)
+    << "failed to load map helper";
 
     return Error();
 }
@@ -290,7 +338,7 @@ Error MapState::render(
                 continue;
 
             target->frame(
-                &it->second.frames[0],
+                it->second.frame(),
                 p.at);
         }
     }

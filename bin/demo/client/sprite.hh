@@ -36,6 +36,10 @@ struct Sprite {
     const gfx::Sprite::Frame* frame() const {
         return &sprite.frames[time->value];
     }
+
+    Sprite() = default;
+    Sprite(const Sprite&) = delete;
+    Sprite(Sprite&&) = default;
 };
 
 }

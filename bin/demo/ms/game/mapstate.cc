@@ -13,7 +13,8 @@ Error MapState::init(
 }
 
 Error MapState::apply(
-    const MapState::Update::List* updates) {
+    MapOutput::List* outputs,
+    const MapInput::List* updates) {
     // TODO: handle updates.
     return Error();
 }

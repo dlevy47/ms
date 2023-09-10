@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "logger.hh"
 #include "p.hh"
 #include "util/error.hh"
 #include "wz/directory.hh"
@@ -322,6 +323,13 @@ struct Vfs {
             --rc;
             if (rc == (uint32_t)0)
                 opened.reset();
+        }
+
+        ~File() {
+            if (rc > 0) {
+                LOG(Logger::ERROR)
+                    << "closing file with " << rc << " open handles!";
+            }
         }
 
         File() = default;

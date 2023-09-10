@@ -22,6 +22,13 @@ void Window::scroll_callback(double x, double y) {
     scroll.value.y = y;
 }
 
+void Window::mouse_button_callback(int button, int action, int mods) {
+    mouse_buttons.push(MouseButton {
+        .action = (action == GLFW_PRESS ? MouseButton::PRESS : MouseButton::RELEASE),
+        .button = button,
+    });
+}
+
 bool Window::consume_scroll(gfx::Vector<double>* scroll) {
     if (this->scroll.available) {
         scroll->x = this->scroll.value.x;
@@ -80,6 +87,15 @@ static void Window_scroll_callback(
     window->scroll_callback(x, y);
 }
 
+static void Window_mouse_button_callback(
+    GLFWwindow* glfw_window,
+    int button,
+    int action,
+    int mods) {
+    Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
+    window->mouse_button_callback(button, action, mods);
+}
+
 Error Window::init(
     Window* w,
     const char* window_title) {
@@ -98,6 +114,7 @@ Error Window::init(
     glfwSetCharCallback(w->window, Window_char_callback);
     glfwSetKeyCallback(w->window, Window_key_callback);
     glfwSetScrollCallback(w->window, Window_scroll_callback);
+    glfwSetMouseButtonCallback(w->window, Window_mouse_button_callback);
     glfwSetWindowUserPointer(w->window, w);
     LOG(Logger::INFO) << "window created";
 

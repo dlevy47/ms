@@ -5,6 +5,7 @@
 #include "p.hh"
 #include "client/dataset.hh"
 #include "client/map.hh"
+#include "client/sprite.hh"
 #include "client/universe.hh"
 #include "client/game/renderer.hh"
 #include "ms/game/mapstate.hh"
@@ -14,12 +15,23 @@
 namespace client {
 namespace renderer {
 
+struct MapHelper {
+    wz::Vfs::File::Handle map_helper_file;
+    
+    std::unordered_map<ms::Map::Portal::Kind, client::Sprite> portal_sprites;
+
+    static Error load(
+        MapHelper* self,
+        client::Map::Helper&& helper,
+        systems::Time* time);
+};
+
 struct MapLoader {
     P<client::Dataset> dataset;
 
     P<client::Universe> universe;
 
-    client::Map::Helper map_helper;
+    MapHelper map_helper;
 
     std::unordered_map<ms::Map::ID, client::Map, ms::Map::ID::Hash> maps;
 

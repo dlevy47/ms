@@ -7,3 +7,4 @@ third-party.windows/
 *.obj
 .DS_Store
 ent.plist
+compile-commands.json

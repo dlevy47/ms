@@ -6,6 +6,7 @@
 package main
 
 import (
+    "bufio"
     "encoding/json"
     "flag"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"runtime"
 	"strings"
     "time"
+    "unicode"
 )
 
 var (
@@ -253,6 +255,117 @@ func objectFile(s SourceFile) ObjectFile {
 	)
 }
 
+type DepsFile string
+
+func (d DepsFile) Dependencies() []string {
+    var windows struct {
+        Data struct {
+            Headers []struct {
+                Header string `json:"Header"`
+            } `json:"ImportedHeaderUnits"`
+        } `json:"Data"`
+    }
+
+    f, err := os.Open(string(d))
+    if err != nil {
+        return nil
+    }
+    defer f.Close()
+
+    var deps []string
+
+    if strings.HasSuffix(string(d), ".json") {
+        if err := json.NewDecoder(f).Decode(&windows); err == nil {
+            for _, h := range windows.Data.Headers {
+                deps = append(deps, h.Header)
+            }
+
+            return deps
+        } else {
+            log.Printf("failed to parse deps file %q: %v", d, err)
+        }
+    }
+
+    // Only expect a single file entry.
+    s := bufio.NewScanner(f)
+    for s.Scan() {
+        line := s.Text()
+        
+        if len(strings.TrimSpace(line)) == 0 {
+            continue
+        }
+
+        runes := []rune(line)
+
+        if !unicode.IsSpace(runes[0]) {
+            i := strings.IndexRune(line, ':')
+            if i == -1 {
+                log.Printf("malformed line in deps file %q: %q", d, line)
+                return nil
+            }
+
+            line = line[i+1:]
+        }
+
+        line = strings.TrimSpace(line)
+
+        var dep []rune
+        runes = []rune(line)
+        for i := 0; i < len(runes); i++ {
+            if unicode.IsSpace(runes[i]) {
+                if len(dep) > 0 {
+                    deps = append(deps, string(dep))
+                    dep = []rune{}
+                }
+            } else {
+                if runes[i] == '\\' {
+                    i++
+
+                    if i >= len(runes) {
+                        if len(dep) > 0 {
+                            deps = append(deps, string(dep))
+                            dep = []rune{}
+                        }
+                    } else {
+                        dep = append(dep, runes[i])
+                    }
+                } else {
+                    dep = append(dep, runes[i])
+                }
+            }
+        }
+
+        if len(dep) > 0 {
+            deps = append(deps, string(dep))
+        }
+    }
+    if err := s.Err(); err != nil {
+        log.Printf("failed to scan deps file %q: %v", d, err)
+        return nil
+    }
+
+    return deps
+}
+
+func depsFile(s SourceFile) DepsFile {
+    suffix := ".d"
+    if runtime.GOOS == "windows" {
+        suffix = ".json"
+    }
+    
+	return DepsFile(
+		filepath.Join(
+			"build",
+			suffixRE.ReplaceAllString(
+				strings.ReplaceAll(
+					string(s),
+					string(filepath.Separator),
+					"-"),
+				suffix),
+		),
+	)
+}
+
 func platformSuffixes() ([]*regexp.Regexp, []*regexp.Regexp) {
 	switch runtime.GOOS {
 	case "darwin":
@@ -333,6 +446,8 @@ func compileCmd(source SourceFile, additionalIncludes []string) (*exec.Cmd, Obje
         args := append(cflags(additionalIncludes), []string{
             string(source),
             "/Fo" + string(object),
+            "/sourceDependencies",
+            string(depsFile(source)),
         }...)
 
         if *verbose {
@@ -345,6 +460,9 @@ func compileCmd(source SourceFile, additionalIncludes []string) (*exec.Cmd, Obje
             string(source),
             "-o",
             string(object),
+            "-MD",
+            "-MF",
+            string(depsFile(source)),
         }...)
 
         if *verbose {
@@ -696,10 +814,45 @@ type Compile struct {
     includes []string
 }
 
+func (c *Compile) needsUpdate(b *Builder, object ObjectFile) bool {
+    deps := depsFile(c.source).Dependencies()
+
+    objectLast := objectFile(c.source).LastUpdated()
+
+    if len(deps) > 0 {
+        for _, dep := range deps {
+            if b.Options.Verbose {
+                fmt.Printf("[v] deps: %q checking %q\n", c.source, dep)
+            }
+
+            info, err := os.Stat(string(dep))
+            if err != nil {
+                if b.Options.Verbose {
+                    fmt.Printf("[v] deps: %q checking %q: failed to stat: %v\n", c.source, dep, err)
+                }
+                
+                return true
+            }
+            
+            if objectLast.Before(info.ModTime()) {
+                if b.Options.Verbose {
+                    fmt.Printf("[v] deps: %q checking %q: sourceLast %v > dep %v\n", c.source, dep, objectLast, info.ModTime())
+                }
+                
+                return true
+            }
+        }
+
+        return false
+    } else {
+        return objectLast.Before(c.source.LastUpdated())
+    }
+}
+
 func (c *Compile) Do(b *Builder, t *Task) error {
     object := objectFile(c.source)
 
-    if !b.Options.Clean && c.source.LastUpdated().Before(object.LastUpdated()) {
+    if !b.Options.Clean && !c.needsUpdate(b, object) {
         if b.Options.Verbose {
             fmt.Printf("[v] %q up to date\n", t.Name)
         }
@@ -995,13 +1148,15 @@ func (b *Builder) MustBuild() {
 }
 
 func (b *Builder) Build() error {
-    workQueue := make(chan *Task, runtime.NumCPU())
+    taskCount := runtime.NumCPU()
+    
+    workQueue := make(chan *Task, taskCount)
     defer close(workQueue)
 
     done := make(chan bool, len(b.tasks))
     errors := make(chan error, len(b.tasks))
 
-    for i := 0; i < runtime.NumCPU(); i++ {
+    for i := 0; i < taskCount; i++ {
         go b.worker(workQueue, done, errors)
     }
 

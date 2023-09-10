@@ -107,7 +107,7 @@ Error Program::init(
 
 void Ui::input(
     gl::Window* window,
-    bool keys) {
+    bool hovered) {
     nk_input_begin(context); {
         double this_mouse_position[2] = { 0 };
         glfwGetCursorPos(
@@ -126,23 +126,16 @@ void Ui::input(
             (int)this_mouse_position[1],
             glfwGetMouseButton(window->window.get(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
 
-        if (window->scroll.available) {
-            std::cout
-                << "scroll " << window->scroll.value << "\n";
-        }
+        if (hovered) {
+            gfx::Vector<double> window_scroll;
+            if (window->consume_scroll(&window_scroll)) {
+                struct nk_vec2 scroll = {
+                    .x = static_cast<float>(window_scroll.x),
+                    .y = static_cast<float>(window_scroll.y),
+                };
+                nk_input_scroll(context, scroll);
+            }
 
-        gfx::Vector<double> window_scroll;
-        if (window->consume_scroll(&window_scroll)) {
-            struct nk_vec2 scroll = {
-                .x = static_cast<float>(window_scroll.x),
-                .y = static_cast<float>(window_scroll.y),
-            };
-            nk_input_scroll(context, scroll);
-            std::cout
-                << "[nk] input scroll " << window_scroll << "\n";
-        }
-
-        if (keys) {
             while (!window->key_codepoints.empty()) {
                 nk_input_unicode(context, window->key_codepoints.front());
                 window->key_codepoints.pop();
@@ -153,11 +146,11 @@ void Ui::input(
 
                 enum nk_keys nk_key = NK_KEY_NONE;
                 switch (keypress.key) {
-                case GLFW_KEY_BACKSPACE:
-                    nk_key = NK_KEY_BACKSPACE;
-                    break;
-                default:
-                    break;
+                    case GLFW_KEY_BACKSPACE:
+                        nk_key = NK_KEY_BACKSPACE;
+                        break;
+                    default:
+                        break;
                 }
 
                 if (nk_key != NK_KEY_NONE) {

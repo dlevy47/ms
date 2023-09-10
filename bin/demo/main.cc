@@ -13,6 +13,8 @@
 #include "ms/map.hh"
 #include "ms/game/mapstate.hh"
 #include "systems/time.hh"
+#include "ui/input.hh"
+#include "util.hh"
 #include "util/convert.hh"
 #include "util/error.hh"
 #include "wz/vfs.hh"
@@ -23,9 +25,6 @@
 enum {
     MAPID_LENGTH = 9,
 };
-
-static void draw_blendish() {
-}
 
 static void glfw_errorcallback(int code, const char* message) {
     LOG(Logger::ERROR) <<
@@ -75,26 +74,7 @@ Error main_(const std::vector<std::string>& args) {
         Error::UIERROR)
         << "failed to initialize demo";
 
-    if (args.size() > 3) {
-        // TODO: Delete this.
-        // Lookup a provided string in the map index.
-        std::wstring key;
-        {
-            std::wstringstream ss;
-            ss << args[3].c_str();
-            key = ss.str();
-        }
-
-        std::vector<ms::Map::ID> ids =
-            demo.map_index.search(key.c_str());
-
-        for (auto it = ids.begin(); it != ids.end(); it++) {
-            LOG(Logger::INFO) << "  matched map: " <<
-                demo.map_index.name(*it);
-        }
-    }
-
-    CHECK(demo.load_map(map_id),
+    CHECK(demo.loadmap(map_id),
         Error::UIERROR)
         << "failed to load map " << map_id;
     {
@@ -117,6 +97,8 @@ Error main_(const std::vector<std::string>& args) {
 
     auto last_metrics = std::chrono::system_clock::now();
 
+    ui::Input input;
+
     while (!window.shouldclose()) {
         gfx::Vector<int> window_size;
         gfx::Vector<int> display_size;
@@ -127,38 +109,6 @@ Error main_(const std::vector<std::string>& args) {
         window.framebuffer_size(
             &display_size.x,
             &display_size.y);
-
-        struct {
-            struct {
-                gfx::Vector<double> now;
-                gfx::Vector<double> last;
-            } screen;
-
-            struct {
-                gfx::Vector<double> now;
-                gfx::Vector<double> last;
-            } ndc;
-        } mouse;
-
-        {
-            glfwGetCursorPos(
-                window.window,
-                &mouse.screen.now.x,
-                &mouse.screen.now.y);
-
-            // Mouse positions are in screen space. First, project them to NDC.
-            mouse.ndc.now.x = ((mouse.screen.now.x * 2) / window_size.x) - 1;
-            mouse.ndc.now.y = 1 - ((mouse.screen.now.y * 2) / window_size.y);
-
-            mouse.ndc.last.x = ((mouse.screen.last.x * 2) / window_size.x) - 1;
-            mouse.ndc.last.y = 1 - ((mouse.screen.last.y * 2) / window_size.y);
-        }
-
-        bool drag = glfwGetMouseButton(window.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-
-        if (nk_window_is_any_hovered(demo.ui.context)) {
-            drag = false;
-        }
 
         gfx::Rect<uint32_t> window_viewport = {
             .topleft = {0},
@@ -177,32 +127,10 @@ Error main_(const std::vector<std::string>& args) {
                     demo.game_renderer.begin(
                         &frame,
                         demo.map_viewport);
-
-                gfx::Vector<double> map_tmp = target.unproject(mouse.ndc.now);
-                if (drag) {
-                    gfx::Vector<double> map_lmp = target.unproject(mouse.ndc.last);
-
-                    gfx::Vector<double> translate = map_lmp - map_tmp;
-                    demo.map_viewport.translate(translate);
-                }
-
-                gfx::Vector<double> scroll;
-                if (window.consume_scroll(&scroll)) {
-                    if (scroll.y > 10) scroll.y = 10;
-                    if (scroll.y < -10) scroll.y = -10;
-
-                    scroll.y *= -.04;
-                    scroll.y += 1;
-
-                    // Limit area of the viewport to cap zoom.
-                    if (scroll.y < 1 && demo.map_viewport.area() < (0.01 * demo.map_state->basemap.bounding_box.area())) {
-                        // Area is too small, and wants to be zoomed in.
-                    } else if (scroll.y > 1 && demo.map_viewport.area() > (10 * demo.map_state->basemap.bounding_box.area())) {
-                        // Area is too big, and wants to be zoomed out.
-                    } else {
-                        demo.map_viewport.scale_about(scroll.y, map_tmp);
-                    }
-                }
+                
+                demo.processinput(
+                    &window,
+                    &target);
 
                 CHECK(demo.map_state_renderer.render(
                     &demo.map_state_options,
@@ -233,11 +161,7 @@ Error main_(const std::vector<std::string>& args) {
                 }
             }
 
-            demo.ui.input(
-                &window,
-                nk_window_is_any_hovered(demo.ui.context));
-
-            CHECK(demo.draw_ui(&window),
+            CHECK(demo.drawui(&window),
                 Error::UIERROR)
                 << "failed to draw demo ui";
 
@@ -246,12 +170,6 @@ Error main_(const std::vector<std::string>& args) {
                 window_size,
                 &demo.ui);
         }
-
-        {
-            draw_blendish();
-        }
-
-        mouse.screen.last = mouse.screen.now;
 
         demo.universe.tick();
     }

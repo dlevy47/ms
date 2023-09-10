@@ -1,0 +1,3 @@
+CompileFlags:
+  Add: [-I/Users/drl/dev/ms2/bin/demo/, --std=c++20]
+  Compiler: clang++

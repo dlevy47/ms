@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <locale>
 #include <memory>
+#include <optional>
 
 #include "gl.hh"
 #include "client/dataset.hh"
@@ -16,9 +17,15 @@
 #include "ms/mapindex.hh"
 #include "ms/game/mapstate.hh"
 #include "nk/ui.hh"
+#include "ui/input.hh"
 #include "util/error.hh"
 
 struct Demo {
+    enum {
+        CLIENT_MAP = 1,
+        CLIENT_NK,
+    };
+    
     // converter is a converter from std::wstring to a utf8 std::string.
     // nuklear methods (and some OS interfaces) typically require a utf8
     // string, instead of a wchar_t string.
@@ -58,6 +65,9 @@ struct Demo {
     // map_viewport is the map coordinate rectangle to draw.
     gfx::Rect<double> map_viewport;
 
+    // input is used to multiplex inputs to the map or UI.
+    ui::Input input;
+
     client::ui::NkRenderer nk_renderer;
 
     nk::Ui ui;
@@ -66,10 +76,14 @@ struct Demo {
         char map_name[256]{ 0 };
     } ui_state;
 
-    Error load_map(
+    void processinput(
+        gl::Window* window,
+        const client::game::Renderer::Target* target);
+
+    Error loadmap(
         ms::Map::ID map_id);
 
-    Error draw_ui(gl::Window* window);
+    Error drawui(gl::Window* window);
 
     static Error init(
         Demo* self,
