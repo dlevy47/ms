@@ -1,6 +1,7 @@
 #pragma once
 
-#include <unordered_map>
+#include <optional>
+#include <unordered_set>
 #include <variant>
 
 #include "gl.hh"
@@ -28,7 +29,7 @@ struct Renderer {
         struct Metrics {
             size_t draw_calls{ 0 };
             size_t quads{ 0 };
-            std::unordered_map<GLuint, std::monostate> seen_textures;
+            std::unordered_set<GLuint> seen_textures;
 
             size_t textures() const {
                 return seen_textures.size();
@@ -37,13 +38,16 @@ struct Renderer {
 
         Metrics metrics;
 
+        // previous_scissor is the previous state of the scissor test.
+        std::optional<gfx::Rect<GLint>> previous_scissor;
+
         // target is the window frame to render to.
         // target is unowned because other things may render to the same frame
         // before or after this Renderer.
         P<gl::Window::Frame> target;
 
-        // viewport is the rectangle, in game coordinates, that is being drawn.
-        gfx::Rect<double> viewport;
+        // game_viewport is the rectangle, in game coordinates, that is being drawn.
+        gfx::Rect<double> game_viewport;
 
         GLfloat projection[4][4];
         GLfloat inverse_projection[4][4];
@@ -132,6 +136,17 @@ struct Renderer {
                     that->line_drawable.ebo_type,
                     nullptr);
             }
+
+            if (previous_scissor.has_value()) {
+                glEnable(GL_SCISSOR_TEST);
+                glScissor(
+                    previous_scissor.value().topleft.x,
+                    previous_scissor.value().topleft.y,
+                    previous_scissor.value().width(),
+                    previous_scissor.value().height());
+            } else {
+                glDisable(GL_SCISSOR_TEST);
+            }
         }
 
         Target() = default;
@@ -151,10 +166,23 @@ struct Renderer {
         Renderer* that);
 
     // begin starts a new render session and returns a Target to render to.
-    // viewport provides, in game coordinates, the part of the scene to show.
+    // game_viewport provides, in game coordinates, the part of the scene to show,
+    // while window_viewport provides, in window coordinates, the part of the
+    // window to render to.
     Target begin(
         gl::Window::Frame* target,
-        gfx::Rect<double> viewport);
+        gfx::Rect<uint32_t> window_viewport,
+        gfx::Rect<double> game_viewport);
+
+    // begin_entirewindow calls begin, using the entire window as the window viewport.
+    Target begin_entirewindow(
+        gl::Window::Frame* target,
+        gfx::Rect<double> game_viewport) {
+        return begin(
+            target,
+            target->viewport,
+            game_viewport);
+    }
 
     Renderer() = default;
     Renderer(Renderer&&) = default;

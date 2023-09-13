@@ -22,8 +22,8 @@
 
 struct Demo {
     enum {
-        CLIENT_MAP = 1,
-        CLIENT_NK,
+        CLIENT_NK = 1,
+        CLIENT_MAP,
     };
     
     // converter is a converter from std::wstring to a utf8 std::string.
@@ -57,6 +57,7 @@ struct Demo {
         .debug = {
             .bounding_box = true,
             .footholds = true,
+            .grid = true,
             .ladders = true,
             .portals = true,
         },

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <queue>
 
 #include "gl.hh"
@@ -18,6 +19,7 @@ struct Window {
 
         ~Frame() {
             if (window) {
+                window->resize.reset();
                 window->scroll.available = false;
 
                 glfwSwapBuffers(window->window);
@@ -29,6 +31,7 @@ struct Window {
         Frame(Frame&&) = default;
         Frame(const Frame&) = delete;
     };
+    
     // window is this Window's GLFW window.
     P<GLFWwindow> window;
 
@@ -38,6 +41,9 @@ struct Window {
         gfx::Vector<double> value;
         bool available{ false };
     } scroll;
+
+    // resize is a possibly updated new size for the window.
+    std::optional<gfx::Vector<int>> resize;
 
     struct Keypress {
         int key{ 0 };
@@ -80,6 +86,9 @@ struct Window {
 
     // mouse_button_callback is intended to be called from a glfw mouse button callback.
     void mouse_button_callback(int button, int action, int mods);
+
+    // resize_callback is intended to be called from a glfw window size callback.
+    void resize_callback(int width, int height);
 
     // consume_scroll fetches the value of the current scroll, if one is
     // available.

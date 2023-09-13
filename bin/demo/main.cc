@@ -99,6 +99,8 @@ Error main_(const std::vector<std::string>& args) {
 
     ui::Input input;
 
+    gfx::Vector<double> aspect;
+
     while (!window.shouldclose()) {
         gfx::Vector<int> window_size;
         gfx::Vector<int> display_size;
@@ -109,6 +111,23 @@ Error main_(const std::vector<std::string>& args) {
         window.framebuffer_size(
             &display_size.x,
             &display_size.y);
+
+        if (window.resize.has_value()) {
+            // Resize the map viewport to match a change in aspect ratio.
+            std::cout << "old aspect: " << aspect << "\n";
+            double new_width = aspect.x * window_size.x;
+            double new_height = aspect.y * window_size.y;
+
+            demo.map_viewport.bottomright = {
+                .x = demo.map_viewport.topleft.x + new_width,
+                .y = demo.map_viewport.topleft.y + new_height,
+            };
+        }
+
+        // TODO: Pretty sure this is just a scroll factor. Find a better way
+        // to handle this?
+        aspect.x = demo.map_viewport.width() / window_size.x;
+        aspect.y = demo.map_viewport.height() / window_size.y;
 
         gfx::Rect<uint32_t> window_viewport = {
             .topleft = {0},
@@ -123,9 +142,15 @@ Error main_(const std::vector<std::string>& args) {
                 Error::UIERROR) << "failed to start frame";
 
             {
+                gfx::Rect<uint32_t> map_viewport = {
+                    .topleft = {100, 100},
+                    .bottomright = {window_viewport.bottomright.x - 100, window_viewport.bottomright.y - 100},
+                };
+                
                 client::game::Renderer::Target target =
                     demo.game_renderer.begin(
                         &frame,
+                        map_viewport,
                         demo.map_viewport);
                 
                 demo.processinput(

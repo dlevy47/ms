@@ -54,6 +54,7 @@ struct MapState {
         struct {
             bool bounding_box{ false };
             bool footholds{ false };
+            bool grid{ false };
             bool ladders{ false };
             bool portals{ false };
 

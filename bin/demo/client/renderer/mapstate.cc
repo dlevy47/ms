@@ -231,21 +231,21 @@ static Error background(
     // computed parallax. It's expressed in the data as a percentage of
     // the background's distance from the center of the map.
     gfx::Vector<double> shift = {
-        .x = target->viewport.topleft.x + target->viewport.width() / 2,
-        .y = target->viewport.topleft.y + target->viewport.height() / 2,
+        .x = target->game_viewport.topleft.x + target->game_viewport.width() / 2,
+        .y = target->game_viewport.topleft.y + target->game_viewport.height() / 2,
     };
 
     // For moving background, compute the movement by computing the time
     // interval in which the background should complete a full tile cycle.
     // This time interval is r * 5 seconds.
 
-    shift.x += background->r.x * (target->viewport.topleft.x + target->viewport.width() / 2) / 100;
+    shift.x += background->r.x * (target->game_viewport.topleft.x + target->game_viewport.width() / 2) / 100;
     if (background_moveshorizontally(background)) {
         uint64_t interval = background->r.x * 15000;
         shift.x += static_cast<double>(time % interval) / interval * background->c.x;
     }
 
-    shift.y += background->r.y * (target->viewport.topleft.y + target->viewport.height() / 2) / 100;
+    shift.y += background->r.y * (target->game_viewport.topleft.y + target->game_viewport.height() / 2) / 100;
     if (background_movesvertically(background)) {
         uint64_t interval = background->r.y * 15000;
         shift.y += static_cast<double>(time % interval) / interval * background->c.y;
@@ -376,6 +376,84 @@ Error MapState::render(
         target->rect_withoptions(
             resources->bounding_box,
             line_options);
+    }
+
+    if (options->debug.grid) {
+        client::game::Renderer::Target::LineOptions line_options = {
+            .width = 2,
+            .color = {
+                .r = 0,
+                .g = 200,
+                .b = 0,
+                .a = 100,
+            },
+        };
+
+        // Axes.
+        if (state->basemap.bounding_box.topleft.x < 0 && state->basemap.bounding_box.bottomright.x > 0) {
+            // Vertical axis.
+            target->line_withoptions(
+                {
+                    .x = 0,
+                    .y = state->basemap.bounding_box.topleft.y,
+                },
+                {
+                    .x = 0,
+                    .y = state->basemap.bounding_box.bottomright.y,
+                },
+                line_options);
+        }
+
+        if (state->basemap.bounding_box.topleft.y < 0 && state->basemap.bounding_box.bottomright.y > 0) {
+            // Horizontal axis.
+            target->line_withoptions(
+                {
+                    .x = state->basemap.bounding_box.topleft.x,
+                    .y = 0,
+                },
+                {
+                    .x = state->basemap.bounding_box.bottomright.x,
+                    .y = 0,
+                },
+                line_options);
+        }
+
+        // Grid.
+        const int32_t increment = 100;
+        line_options.width = 1;
+        line_options.color.b = 100;
+        
+        // Horizontal.
+        for (int32_t y = (state->basemap.bounding_box.topleft.y / increment) * increment; y < state->basemap.bounding_box.bottomright.y; y += increment) {
+            if (y != 0) {
+                target->line_withoptions(
+                    {
+                        .x = state->basemap.bounding_box.topleft.x,
+                        .y = y,
+                    },
+                    {
+                        .x = state->basemap.bounding_box.bottomright.x,
+                        .y = y,
+                    },
+                    line_options);
+            }
+        }
+        
+        // Vertical.
+        for (int32_t x = (state->basemap.bounding_box.topleft.x / increment) * increment; x < state->basemap.bounding_box.bottomright.x; x += increment) {
+            if (x != 0) {
+                target->line_withoptions(
+                    {
+                        .x = x,
+                        .y = state->basemap.bounding_box.topleft.y,
+                    },
+                    {
+                        .x = x,
+                        .y = state->basemap.bounding_box.bottomright.y,
+                    },
+                    line_options);
+            }
+        }
     }
 
     return Error();

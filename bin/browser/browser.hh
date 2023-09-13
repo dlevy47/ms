@@ -14,6 +14,7 @@
 #include "gfx/vector.hh"
 #include "gl/window.hh"
 #include "nk/ui.hh"
+#include "ui/input.hh"
 
 struct BrowsedFile {
     std::string filename;
@@ -48,6 +49,8 @@ struct Browser {
     client::game::Renderer game_renderer;
 
     client::ui::NkRenderer nk_renderer;
+
+    ui::Input input;
 
     // ui is the nuklear UI to render.
     nk::Ui ui;

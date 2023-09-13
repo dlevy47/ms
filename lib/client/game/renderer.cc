@@ -9,7 +9,7 @@ Error Renderer::Target::frame(
     const gfx::Sprite::Frame* frame,
     const gfx::Vector<int32_t> at) {
     ++metrics.quads;
-    metrics.seen_textures[frame->texture] = std::monostate();
+    metrics.seen_textures.insert(frame->texture);
 
     // TODO: Instead of drawing each frame separately with its own call,
     // submit to a draw chain.
@@ -284,38 +284,106 @@ static void printmatrix(GLfloat m[4][4]) {
 
 Renderer::Target Renderer::begin(
     gl::Window::Frame* target,
-    gfx::Rect<double> viewport) {
+    gfx::Rect<uint32_t> window_viewport,
+    gfx::Rect<double> game_viewport) {
     Renderer::Target render_target;
     render_target.that = this;
     render_target.target = target;
-    render_target.viewport = viewport;
+    render_target.game_viewport = game_viewport;
+    
+    if (glIsEnabled(GL_SCISSOR_TEST)) {
+        GLint box[4] = {0};
 
-    // Build the projection matrix.
-    gfx::Vector<GLfloat> translate = (gfx::Vector<GLfloat>) viewport.topleft * -1;
-    gfx::Vector<GLfloat> scale = (gfx::Vector<GLfloat>) (viewport.bottomright - viewport.topleft);
+        glGetIntegerv(
+            GL_SCISSOR_BOX,
+            box);
+
+        render_target.previous_scissor = gfx::Rect<GLint>{
+            .topleft = {box[0], box[1]},
+            .bottomright = {box[0] + box[2], box[1] + box[3]},
+        };
+    }
+    
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(
+        (GLint) window_viewport.topleft.x,
+        (GLint) window_viewport.topleft.y,
+        (GLint) window_viewport.width(),
+        (GLint) window_viewport.height());
+
+    // Convert window_viewport to ndc_viewport.
+    gfx::Rect<GLfloat> ndc_viewport = {
+        .topleft = (gfx::Vector<GLfloat>) window_viewport.topleft - target->viewport.topleft,
+        .bottomright = (gfx::Vector<GLfloat>) window_viewport.bottomright - target->viewport.topleft,
+    };
+    ndc_viewport.topleft.x =
+        ((ndc_viewport.topleft.x / target->viewport.width()) * 2) - 1;
+    ndc_viewport.topleft.y =
+        ((ndc_viewport.topleft.y / target->viewport.height()) * 2) - 1;
+    ndc_viewport.bottomright.x =
+        ((ndc_viewport.bottomright.x / target->viewport.width()) * 2) - 1;
+    ndc_viewport.bottomright.y =
+        ((ndc_viewport.bottomright.y / target->viewport.height()) * 2) - 1;
+
+    // The projection matrix is a multiplication of:
+    //   T * S * P
+    // where:
+    //   * P is the orthographic projection from game_viewport to NDC
+    //   * S is a scale matrix to scale game_viewport to the size of ndc_viewport
+    //   * T is a translation matrix to translate the projection to ndc_viewport
+    // To make the code clearer, we compute the terms of the final matrix using the
+    // following notation:
+    //
+    //   m1 0  0  m3
+    //   0  m2 0  m4
+    //   0  0  1  0
+    //   0  0  0  1
+    
+    gfx::Vector<GLfloat> ortho_translate =
+        (gfx::Vector<GLfloat>) game_viewport.topleft * -1;
+    gfx::Vector<GLfloat> ortho_scale =
+        (gfx::Vector<GLfloat>) (game_viewport.bottomright - game_viewport.topleft);
+
+    // The terms of the projection matrix.
+    const GLfloat p1 = 2 / ortho_scale.x;
+    const GLfloat p2 = -2 / ortho_scale.y;
+    const GLfloat p3 = ((2 / ortho_scale.x) * ortho_translate.x) - 1;
+    const GLfloat p4 = 1 - ((2 / ortho_scale.y) * ortho_translate.y);
+
+    gfx::Vector<GLfloat> window_scale =
+        (gfx::Vector<GLfloat>) (ndc_viewport.bottomright - ndc_viewport.topleft) / 2;
+    gfx::Vector<GLfloat> window_translate =
+        (gfx::Vector<GLfloat>) (ndc_viewport.topleft - gfx::Vector<double>{-1.0, -1.0});
+    window_translate.y *= -1;  // why?
+
+    // The terms of the final matrix.
+    const GLfloat m1 = window_scale.x * p1;
+    const GLfloat m2 = window_scale.y * p2;
+    const GLfloat m3 = (window_scale.x * p3) + window_translate.x;
+    const GLfloat m4 = (window_scale.y * p4) + window_translate.y;
 
     memset(render_target.projection, 0, sizeof(render_target.projection));
 
-    render_target.projection[0][0] = 2 / scale.x;
+    render_target.projection[0][0] = m1;
 
-    render_target.projection[1][1] = -2 / scale.y;
+    render_target.projection[1][1] = m2;
 
     render_target.projection[2][2] = 1;
 
-    render_target.projection[3][0] = ((2 / scale.x) * translate.x) - 1;
-    render_target.projection[3][1] = 1 - ((2 / scale.y) * translate.y);
+    render_target.projection[3][0] = m3;
+    render_target.projection[3][1] = m4;
     render_target.projection[3][3] = 1;
 
     memset(render_target.inverse_projection, 0, sizeof(render_target.inverse_projection));
 
-    render_target.inverse_projection[0][0] = scale.x / 2;
+    render_target.inverse_projection[0][0] = 1 / m1;
 
-    render_target.inverse_projection[1][1] = -scale.y / 2;
+    render_target.inverse_projection[1][1] = 1 / m2;
 
     render_target.inverse_projection[2][2] = 1;
 
-    render_target.inverse_projection[3][0] = (scale.x - (2 * translate.x)) / 2;
-    render_target.inverse_projection[3][1] = (scale.y - (2 * translate.y)) / 2;
+    render_target.inverse_projection[3][0] = -m3 / m1;
+    render_target.inverse_projection[3][1] = -m4 / m2;
     render_target.inverse_projection[3][3] = 1;
 
     return render_target;

@@ -29,6 +29,13 @@ void Window::mouse_button_callback(int button, int action, int mods) {
     });
 }
 
+void Window::resize_callback(int width, int height) {
+    resize = {
+        .x = width,
+        .y = height,
+    };
+}
+
 bool Window::consume_scroll(gfx::Vector<double>* scroll) {
     if (this->scroll.available) {
         scroll->x = this->scroll.value.x;
@@ -96,6 +103,14 @@ static void Window_mouse_button_callback(
     window->mouse_button_callback(button, action, mods);
 }
 
+static void Window_resize_callback(
+    GLFWwindow* glfw_window,
+    int width,
+    int height) {
+    Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
+    window->resize_callback(width, height);
+}
+
 Error Window::init(
     Window* w,
     const char* window_title) {
@@ -115,6 +130,7 @@ Error Window::init(
     glfwSetKeyCallback(w->window, Window_key_callback);
     glfwSetScrollCallback(w->window, Window_scroll_callback);
     glfwSetMouseButtonCallback(w->window, Window_mouse_button_callback);
+    glfwSetWindowSizeCallback(w->window, Window_resize_callback);
     glfwSetWindowUserPointer(w->window, w);
     LOG(Logger::INFO) << "window created";
 

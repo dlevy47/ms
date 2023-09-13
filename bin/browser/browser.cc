@@ -252,6 +252,12 @@ Error Browser::run() {
     float frame_position[2] = { 0, 0 };
     double last_mouse_position[2] = { 0, 0 };
 
+    enum {
+        CLIENT_NONE,
+        CLIENT_NK,
+        CLIENT_IMAGE,
+    };
+
     while (!window.shouldclose()) {
         gfx::Vector<int> window_size;
         gfx::Vector<int> framebuffer_size;
@@ -266,8 +272,6 @@ Error Browser::run() {
             .x = (float)framebuffer_size.x / (float)window_size.x,
             .y = (float)framebuffer_size.y / (float)window_size.y,
         };
-
-        ui.input(&window, false);
 
         if (nk_begin(ui.context, "WZ explorer", nk_rect(0, 0, window_size.x / 3, window_size.y),
             NK_WINDOW_BORDER | NK_WINDOW_TITLE | NK_WINDOW_MOVABLE | NK_WINDOW_BACKGROUND)) {
@@ -310,7 +314,7 @@ Error Browser::run() {
                 };
 
                 client::game::Renderer::Target target =
-                    game_renderer.begin(
+                    game_renderer.begin_entirewindow(
                         &frame,
                         game_viewport);
 
