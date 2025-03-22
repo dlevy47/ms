@@ -1,5 +1,7 @@
 # ms2
 
+`ms2` is a set of libraries and tools for rendering 2D MMORPG maps.
+
 ## Development
 
 ### Prerequisites
